@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Ajouter un élément de stock - {{ app_name }}{% endblock %}
+
+{% block page_title %}
+<i class="bi bi-box-seam"></i> Ajouter un élément de stock à {{ equipment.reference }}
+{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('equipments.view', equipment_id=equipment.id) }}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Retour
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Associer un élément de stock</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            
+            <div class="mb-3">
+                {{ form.stock_item_id.label(class="form-label") }}
+                {{ form.stock_item_id(class="form-select" + (" is-invalid" if form.stock_item_id.errors else "")) }}
+                {% for error in form.stock_item_id.errors %}
+                <div class="invalid-feedback">{{ error }}</div>
+                {% endfor %}
+                <small class="form-text text-muted">
+                    Sélectionnez un élément de stock disponible.
+                    {% if form.stock_item_id.choices|length <= 1 %}
+                    <span class="text-danger">Aucun élément disponible.</span>
+                    {% endif %}
+                </small>
+            </div>
+            
+            <div class="mb-3">
+                {{ form.quantity_used.label(class="form-label") }}
+                <div class="input-group">
+                    {{ form.quantity_used(class="form-control" + (" is-invalid" if form.quantity_used.errors else ""), 
+                                           step="0.01", min="0.01") }}
+                    <span class="input-group-text">unité(s)</span>
+                </div>
+                {% for error in form.quantity_used.errors %}
+                <div class="invalid-feedback">{{ error }}</div>
+                {% endfor %}
+                <small class="form-text text-muted">Quantité utilisée par cet équipement</small>
+            </div>
+            
+            <div class="mb-3">
+                {{ form.notes.label(class="form-label") }}
+                {{ form.notes(class="form-control", rows=3) }}
+            </div>
+            
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{{ url_for('equipments.view', equipment_id=equipment.id) }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Annuler
+                </a>
+                {{ form.submit(class="btn btn-primary") }}
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if form.stock_item_id.choices|length > 1 %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Informations sur le stock</h5>
+    </div>
+    <div class="card-body">
+        <div id="stockInfo" class="alert alert-info">
+            Sélectionnez un élément pour voir ses détails
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('stock_item_id').addEventListener('change', function() {
+    const itemId = this.value;
+    if (!itemId) {
+        document.getElementById('stockInfo').innerHTML = 
+            'Sélectionnez un élément pour voir ses détails';
+        return;
+    }
+    
+    fetch(`/stock/api/item-info/${itemId}`)
+        .then(response => response.json())
+        .then(data => {
+            let html = `
+                <h6>${data.reference} - ${data.libelle}</h6>
+                <div class="row mt-2">
+                    <div class="col-md-6">
+                        <strong>Quantité disponible:</strong> ${data.quantity} ${data.unit}<br>
+                        <strong>Prix unitaire:</strong> ${data.price} €<br>
+                        <strong>Valeur totale:</strong> ${data.value} €
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Catégorie:</strong> ${data.category || '-'}<br>
+                        <strong>Emplacement:</strong> ${data.location || '-'}<br>
+                        <strong>Fournisseur:</strong> ${data.supplier || '-'}
+                    </div>
+                </div>
+            `;
+            document.getElementById('stockInfo').innerHTML = html;
+        })
+        .catch(error => {
+            document.getElementById('stockInfo').innerHTML = 
+                'Erreur lors du chargement des informations';
+        });
+});
+</script>
+{% endif %}
+{% endblock %}

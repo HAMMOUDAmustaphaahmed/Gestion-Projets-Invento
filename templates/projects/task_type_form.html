@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Modifier' if task_type else 'Ajouter' }} un type de tâche - {{ app_name }}{% endblock %}
+
+{% block page_title %}
+<i class="bi bi-tags"></i> {{ 'Modifier' if task_type else 'Ajouter' }} un type de tâche
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Informations du type de tâche</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.name.label(class="form-label") }}
+                        {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
+                        {% if form.name.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.name.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows=4) }}
+                        {% if form.description.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.description.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.default_duration.label(class="form-label") }}
+                        <div class="input-group">
+                            {{ form.default_duration(class="form-control" + (" is-invalid" if form.default_duration.errors else "")) }}
+                            <span class="input-group-text">jour(s)</span>
+                        </div>
+                        {% if form.default_duration.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.default_duration.errors[0] }}
+                            </div>
+                        {% endif %}
+                        <small class="text-muted">Durée suggérée lors de la création d'une tâche de ce type</small>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('projects.task_types') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Annuler
+                        </a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        {% if task_type %}
+        <!-- Informations supplémentaires pour modification -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informations</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">
+                    <strong>Créé le:</strong><br>
+                    <small class="text-muted">{{ task_type.created_at|format_datetime }}</small>
+                </p>
+                <p class="mb-2">
+                    <strong>Tâches utilisant ce type:</strong><br>
+                    <small class="text-muted">{{ task_type.tasks.count() }} tâche(s)</small>
+                </p>
+                {% if task_type.tasks.count() > 0 %}
+                <div class="alert alert-info mt-3 mb-0">
+                    <i class="bi bi-info-circle"></i>
+                    Ce type est actuellement utilisé par {{ task_type.tasks.count() }} tâche(s). 
+                    La modification affectera uniquement les nouvelles tâches.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Erreur serveur - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+        <div class="card border-danger">
+            <div class="card-body py-5">
+                <div class="error-icon mb-4">
+                    <i class="bi bi-x-circle text-danger" style="font-size: 5rem;"></i>
+                </div>
+                
+                <h1 class="display-4 mb-3">500</h1>
+                <h2 class="mb-4">Erreur interne du serveur</h2>
+                
+                <p class="lead mb-4">
+                    Une erreur s'est produite lors du traitement de votre requête.
+                    Notre équipe technique a été notifiée.
+                </p>
+                
+                <div class="alert alert-info mb-4">
+                    <h5><i class="bi bi-info-circle"></i> Que faire maintenant ?</h5>
+                    <ul class="text-start mb-0">
+                        <li>Rafraîchir la page</li>
+                        <li>Retourner à la page précédente</li>
+                        <li>Attendre quelques minutes et réessayer</li>
+                        <li>Contacter l'administrateur si le problème persiste</li>
+                    </ul>
+                </div>
+                
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{{ url_for('main.index') }}" class="btn btn-primary">
+                        <i class="bi bi-house"></i> Page d'accueil
+                    </a>
+                    
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-speedometer2"></i> Tableau de bord
+                    </a>
+                    {% endif %}
+                    
+                    <button onclick="history.back()" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Retour
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        {% if current_user.role and current_user.role.name == 'admin' %}
+        <div class="mt-4">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Informations techniques (Admin seulement)</h5>
+                </div>
+                <div class="card-body">
+                    <pre class="bg-dark text-light p-3 rounded" style="font-size: 0.8rem;">
+                        <code>
+Timestamp: {{ now|default("N/A") }}
+User: {{ current_user.username|default("Non connecté") }}
+URL: {{ request.url }}
+Method: {{ request.method }}
+User Agent: {{ request.user_agent }}
+                        </code>
+                    </pre>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.error-icon {
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-20px);
+    }
+    60% {
+        transform: translateY(-10px);
+    }
+}
+</style>
+{% endblock %}

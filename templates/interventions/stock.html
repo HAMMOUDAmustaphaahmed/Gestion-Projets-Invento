@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Gestion du stock - Intervention #{{ intervention.intervention_number }}</h1>
+            <p class="text-muted mb-0">{{ intervention.client_name }}</p>
+        </div>
+        <div>
+            <a href="{{ url_for('interventions.view', id=intervention.id) }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Retour
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Ajouter un article de stock</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('interventions.manage_stock', id=intervention.id) }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.stock_item_id.label(class="form-label") }}
+                                    {{ form.stock_item_id(class="form-select" + (" is-invalid" if form.stock_item_id.errors else "")) }}
+                                    {% for error in form.stock_item_id.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    {{ form.estimated_quantity.label(class="form-label") }}
+                                    {{ form.estimated_quantity(class="form-control" + (" is-invalid" if form.estimated_quantity.errors else "")) }}
+                                    {% for error in form.estimated_quantity.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    {{ form.actual_quantity.label(class="form-label") }}
+                                    {{ form.actual_quantity(class="form-control") }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.remaining_quantity.label(class="form-label") }}
+                                    {{ form.remaining_quantity(class="form-control") }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.additional_quantity.label(class="form-label") }}
+                                    {{ form.additional_quantity(class="form-control") }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <div class="form-check mt-4">
+                                        {{ form.validated(class="form-check-input") }}
+                                        {{ form.validated.label(class="form-check-label") }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.justification.label(class="form-label") }}
+                            {{ form.justification(class="form-control", rows=2) }}
+                            <small class="form-text text-muted">Justificatif pour les différences de quantité</small>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('interventions.view', id=intervention.id) }}" class="btn btn-secondary">Annuler</a>
+                            <button type="submit" class="btn btn-primary">Ajouter l'article</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Articles ajoutés</h5>
+                </div>
+                <div class="card-body">
+                    {% if stock_items %}
+                    <div class="list-group list-group-flush">
+                        {% for item in stock_items %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ item.stock_item.libelle if item.stock_item else 'Article inconnu' }}</h6>
+                                    <small class="text-muted">
+                                        Réf: {{ item.stock_item.reference if item.stock_item else '' }}<br>
+                                        Prévision: {{ item.estimated_quantity }}<br>
+                                        Utilisé: {{ item.actual_quantity or 'N/A' }}
+                                    </small>
+                                </div>
+                                <form action="{{ url_for('interventions.delete_stock_item', stock_id=item.id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                            onclick="return confirm('Supprimer cet article ?')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                            {% if item.justification %}
+                            <small class="text-muted d-block mt-1">
+                                <em>{{ item.justification }}</em>
+                            </small>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted mb-0">Aucun article de stock ajouté</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

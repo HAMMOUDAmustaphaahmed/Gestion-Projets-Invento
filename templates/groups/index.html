@@ -1,0 +1,203 @@
+
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête de page -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Groupes</h1>
+            <p class="text-muted mb-0">Gestion des groupes de personnel</p>
+        </div>
+        {% if current_user.has_permission('personnel', 'create') %}
+        <a href="{{ url_for('groups.add') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nouveau groupe
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Recherche et filtres -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" action="{{ url_for('groups.index') }}" class="row g-3">
+                <div class="col-md-8">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="search" 
+                               placeholder="Rechercher un groupe..." value="{{ search }}">
+                        <button class="btn btn-outline-secondary" type="submit">
+                            <i class="bi bi-search"></i>
+                        </button>
+                        {% if search %}
+                        <a href="{{ url_for('groups.index') }}" class="btn btn-outline-danger">
+                            <i class="bi bi-x"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tableau des groupes -->
+    <div class="card">
+        <div class="card-body">
+            {% if groups.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Description</th>
+                            <th>Nombre de membres</th>
+                            <th>Tâches assignées</th>
+                            <th>Date de création</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for group in groups.items %}    
+                    <tr>
+                            <td>
+                                <a href="{{ url_for('groups.view', group_id=group.id) }}" class="text-decoration-none">
+                                    <strong>{{ group.name }}</strong>
+                                </a>
+                            </td>
+                            <td>
+                                {% if group.description %}
+                                <small class="text-muted">{{ group.description[:100] }}{% if group.description|length > 100 %}...{% endif %}</small>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ group.members|length }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ group.tasks|length }}</span>
+                            </td>
+                            <td>
+                                <small>{{ group.created_at|format_date }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ url_for('groups.view', group_id=group.id) }}" 
+                                       class="btn btn-outline-primary" title="Voir">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    
+                                    {% if current_user.has_permission('personnel', 'update') %}
+                                    <a href="{{ url_for('groups.edit', group_id=group.id) }}" 
+                                       class="btn btn-outline-secondary" title="Modifier">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    {% endif %}
+                                    
+                                    {% if current_user.has_permission('personnel', 'delete') %}
+                                    <button type="button" class="btn btn-outline-danger confirm-delete" 
+                                            data-url="{{ url_for('groups.delete', group_id=group.id) }}"
+                                            data-confirm="Êtes-vous sûr de vouloir supprimer le groupe '{{ group.name }}' ?"
+                                            data-target="#group-{{ group.id }}"
+                                            title="Supprimer">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination (si nécessaire) -->
+            {% if groups.pages > 1 %}
+            <nav aria-label="Pagination">
+                <ul class="pagination justify-content-center">
+                    {% if groups.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('groups.index', page=groups.prev_num) }}">Précédent</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in groups.iter_pages() %}
+                    <li class="page-item {% if page_num == groups.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('groups.index', page=page_num) }}">{{ page_num }}</a>
+                    </li>
+                    {% endfor %}
+                    
+                    {% if groups.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('groups.index', page=groups.next_num) }}">Suivant</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+            {% else %}
+            <!-- Aucun résultat -->
+            <div class="text-center py-5">
+                <div class="mb-3">
+                    <i class="bi bi-people display-1 text-muted"></i>
+                </div>
+                <h5>Aucun groupe trouvé</h5>
+                <p class="text-muted">
+                    {% if search %}
+                    Aucun groupe ne correspond à votre recherche "{{ search }}"
+                    {% else %}
+                    Commencez par créer votre premier groupe
+                    {% endif %}
+                </p>
+                {% if current_user.has_permission('personnel', 'create') %}
+                <a href="{{ url_for('groups.add') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Créer un groupe
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Gestion de la suppression
+    $('.confirm-delete').click(function(e) {
+        e.preventDefault();
+        var url = $(this).data('url');
+        var message = $(this).data('confirm');
+        var target = $(this).data('target');
+        
+        if (confirm(message)) {
+            $.ajax({
+                url: url,
+                type: 'POST',
+                data: {
+                    csrf_token: '{{ csrf_token() }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        if (target) {
+                            $(target).remove();
+                        } else {
+                            location.reload();
+                        }
+                        showToast('success', 'Groupe supprimé avec succès');
+                    } else {
+                        showToast('error', response.message || 'Erreur lors de la suppression');
+                    }
+                },
+                error: function() {
+                    showToast('error', 'Erreur réseau');
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}
+[file content end]

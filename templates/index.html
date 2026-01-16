@@ -1,0 +1,590 @@
+{% extends "base.html" %}
+
+{% block title %}Accueil - Invento {% endblock %}
+
+{% block extra_css %}
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 222.2 84% 4.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 222.2 84% 4.9%;
+        --primary: 196 43% 47%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96.1%;
+        --secondary-foreground: 222.2 47.4% 11.2%;
+        --muted: 210 40% 96.1%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --accent: 210 40% 96.1%;
+        --accent-foreground: 222.2 47.4% 11.2%;
+        --border: 214.3 31.8% 91.4%;
+        --ring: 196 43% 47%;
+    }
+
+    .hero-section {
+        padding: 10rem 2rem 8rem;
+        max-width: 1280px;
+        margin: 0 auto;
+        position: relative;
+    }
+
+    .hero-content {
+        max-width: 800px;
+        margin: 0 auto;
+        text-align: center;
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.375rem 1rem;
+        border-radius: 9999px;
+        background: hsl(var(--secondary));
+        color: hsl(var(--secondary-foreground));
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin-bottom: 2rem;
+        border: 1px solid hsl(var(--border));
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    .badge-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: hsl(var(--primary));
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    .hero-title {
+        font-size: clamp(2.5rem, 6vw, 4.5rem);
+        font-weight: 800;
+        line-height: 1.1;
+        margin-bottom: 1.5rem;
+        letter-spacing: -0.02em;
+        background: linear-gradient(135deg, hsl(var(--foreground)) 0%, hsl(var(--muted-foreground)) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: fadeInUp 0.6s ease-out 0.1s backwards;
+    }
+
+    .hero-description {
+        font-size: 1.25rem;
+        color: hsl(var(--muted-foreground));
+        max-width: 600px;
+        margin: 0 auto 2.5rem;
+        line-height: 1.7;
+        animation: fadeInUp 0.6s ease-out 0.2s backwards;
+    }
+
+    .hero-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        animation: fadeInUp 0.6s ease-out 0.3s backwards;
+    }
+
+    .btn-large {
+        padding: 0.875rem 2rem;
+        font-size: 1rem;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Gradient Background */
+    .gradient-bg {
+        position: absolute;
+        top: -200px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 1000px;
+        height: 1000px;
+        background: radial-gradient(circle, rgba(74, 144, 164, 0.15) 0%, transparent 70%);
+        pointer-events: none;
+        z-index: -1;
+    }
+
+    /* Features Section */
+    .features-section {
+        padding: 6rem 2rem;
+        max-width: 1280px;
+        margin: 0 auto;
+    }
+
+    .section-header {
+        text-align: center;
+        margin-bottom: 4rem;
+    }
+
+    .section-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        background: hsl(var(--secondary));
+        color: hsl(var(--primary));
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .section-header h2 {
+        font-size: clamp(2rem, 4vw, 3rem);
+        font-weight: 700;
+        margin-bottom: 1rem;
+        letter-spacing: -0.02em;
+    }
+
+    .section-header p {
+        font-size: 1.125rem;
+        color: hsl(var(--muted-foreground));
+        max-width: 700px;
+        margin: 0 auto;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 2rem;
+    }
+
+    .feature-card {
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 1rem;
+        padding: 2rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        height: 100%;
+    }
+
+    .feature-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #4A90A4, #2C5F6F);
+        transform: scaleX(0);
+        transition: transform 0.3s;
+    }
+
+    .feature-card:hover {
+        border-color: hsl(var(--primary));
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        transform: translateY(-4px);
+    }
+
+    .feature-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .feature-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 0.75rem;
+        background: linear-gradient(135deg, #4A90A4 0%, #2C5F6F 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+        color: white;
+        font-size: 1.5rem;
+        box-shadow: 0 4px 12px rgba(74, 144, 164, 0.25);
+    }
+
+    .feature-card h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        color: hsl(var(--card-foreground));
+    }
+
+    .feature-card p {
+        color: hsl(var(--muted-foreground));
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+
+    .feature-list {
+        list-style: none;
+        margin-top: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .feature-list li {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: hsl(var(--muted-foreground));
+    }
+
+    .feature-list li::before {
+        content: '✓';
+        color: hsl(var(--primary));
+        font-weight: bold;
+    }
+
+    /* Stats Section */
+    .stats-section {
+        padding: 6rem 2rem;
+        background: linear-gradient(135deg, #4A90A4 0%, #2C5F6F 100%);
+        color: white;
+    }
+
+    .stats-grid {
+        max-width: 1280px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 3rem;
+        text-align: center;
+    }
+
+    .stat-item h3 {
+        font-size: 3rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-item p {
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+
+    /* CTA Section */
+    .cta-section {
+        padding: 8rem 2rem;
+        max-width: 1280px;
+        margin: 0 auto;
+    }
+
+    .cta-card {
+        background: linear-gradient(135deg, #4A90A4 0%, #2C5F6F 100%);
+        border-radius: 1.5rem;
+        padding: 4rem 2rem;
+        text-align: center;
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .cta-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+        animation: rotate 20s linear infinite;
+    }
+
+    @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    .cta-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .cta-card h2 {
+        font-size: clamp(2rem, 4vw, 2.5rem);
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+
+    .cta-card p {
+        font-size: 1.125rem;
+        opacity: 0.9;
+        margin-bottom: 2rem;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .btn-white {
+        background: white;
+        color: #4A90A4;
+        font-weight: 600;
+    }
+
+    .btn-white:hover {
+        background: hsl(var(--secondary));
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        color: #4A90A4;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .hero-section {
+            padding: 8rem 2rem 6rem;
+        }
+
+        .hero-buttons {
+            flex-direction: column;
+        }
+
+        .btn-large {
+            width: 100%;
+        }
+
+        .features-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+            gap: 2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="gradient-bg"></div>
+    <div class="hero-content">
+        <div class="badge">
+            <span class="badge-dot"></span>
+            Nouvelle génération de GMAO
+        </div>
+        <h1 class="hero-title">Transformez votre gestion industrielle</h1>
+        <p class="hero-description">
+            Une plateforme tout-en-un pour gérer vos stocks, projets et ressources avec une efficacité maximale. 
+            Simple, puissante et intelligente.
+        </p>
+        <div class="hero-buttons">
+            {% if not current_user.is_authenticated %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-large">
+                    Se connecter
+                </a>
+                <a href="#features" class="btn btn-ghost btn-large">
+                    Explorer les fonctionnalités
+                </a>
+            {% else %}
+                <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary btn-large">
+                    <i class="bi bi-speedometer2"></i> Tableau de bord
+                </a>
+                <a href="#features" class="btn btn-ghost btn-large">
+                    Découvrir plus
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section id="features" class="features-section">
+    <div class="section-header">
+        <span class="section-badge">FONCTIONNALITÉS</span>
+        <h2>Tout ce dont vous avez besoin</h2>
+        <p>Une suite complète d'outils conçus pour optimiser chaque aspect de votre gestion industrielle.</p>
+    </div>
+
+    <div class="features-grid">
+        {% if current_user.is_authenticated and current_permissions.stock.read %}
+        <a href="{{ url_for('stock.index') }}" class="text-decoration-none">
+        {% endif %}
+            <div class="feature-card">
+                <div class="feature-icon">📦</div>
+                <h3>Gestion du Stock Intelligente</h3>
+                <p>Suivez vos stocks en temps réel avec des alertes automatiques et une traçabilité complète.</p>
+                <ul class="feature-list">
+                    <li>Attributs dynamiques personnalisables</li>
+                    <li>Alertes de seuil minimum</li>
+                    <li>Gestion multi-fournisseurs</li>
+                    <li>Historique complet des mouvements</li>
+                </ul>
+                {% if not current_user.is_authenticated or not current_permissions.stock.read %}
+                    <div class="mt-3 text-muted small">
+                        <i class="bi bi-lock"></i> Connexion requise
+                    </div>
+                {% endif %}
+            </div>
+        {% if current_user.is_authenticated and current_permissions.stock.read %}
+        </a>
+        {% endif %}
+
+        {% if current_user.is_authenticated and current_permissions.projects.read %}
+        <a href="{{ url_for('projects.index') }}" class="text-decoration-none">
+        {% endif %}
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3>Projets & Tâches</h3>
+                <p>Planifiez, suivez et optimisez tous vos projets avec une visibilité totale.</p>
+                <ul class="feature-list">
+                    <li>Calendrier interactif</li>
+                    <li>Assignation de ressources</li>
+                    <li>Suivi budgétaire en temps réel</li>
+                    <li>Gestion des frais supplémentaires</li>
+                </ul>
+                {% if not current_user.is_authenticated or not current_permissions.projects.read %}
+                    <div class="mt-3 text-muted small">
+                        <i class="bi bi-lock"></i> Connexion requise
+                    </div>
+                {% endif %}
+            </div>
+        {% if current_user.is_authenticated and current_permissions.projects.read %}
+        </a>
+        {% endif %}
+
+        {% if current_user.is_authenticated and current_permissions.dashboard.read %}
+        <a href="{{ url_for('dashboard.index') }}" class="text-decoration-none">
+        {% endif %}
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Dashboard Personnalisable</h3>
+                <p>Créez vos propres indicateurs et visualisez vos données clés instantanément.</p>
+                <ul class="feature-list">
+                    <li>Graphiques interactifs</li>
+                    <li>KPIs personnalisables</li>
+                    <li>Rapports automatisés</li>
+                    <li>Exports de données</li>
+                </ul>
+                {% if not current_user.is_authenticated or not current_permissions.dashboard.read %}
+                    <div class="mt-3 text-muted small">
+                        <i class="bi bi-lock"></i> Connexion requise
+                    </div>
+                {% endif %}
+            </div>
+        {% if current_user.is_authenticated and current_permissions.dashboard.read %}
+        </a>
+        {% endif %}
+
+        {% if current_user.is_authenticated and current_permissions.personnel.read %}
+        <a href="{{ url_for('personnel.index') }}" class="text-decoration-none">
+        {% endif %}
+            <div class="feature-card">
+                <div class="feature-icon">👥</div>
+                <h3>Gestion des Équipes</h3>
+                <p>Organisez vos équipes et optimisez l'allocation de vos ressources humaines.</p>
+                <ul class="feature-list">
+                    <li>Création de groupes</li>
+                    <li>Assignation multi-projets</li>
+                    <li>Suivi des performances</li>
+                    <li>Gestion des compétences</li>
+                </ul>
+                {% if not current_user.is_authenticated or not current_permissions.personnel.read %}
+                    <div class="mt-3 text-muted small">
+                        <i class="bi bi-lock"></i> Connexion requise
+                    </div>
+                {% endif %}
+            </div>
+        {% if current_user.is_authenticated and current_permissions.personnel.read %}
+        </a>
+        {% endif %}
+
+        <div class="feature-card">
+            <div class="feature-icon">🔒</div>
+            <h3>Sécurité Avancée</h3>
+            <p>Protection maximale de vos données avec des contrôles d'accès granulaires.</p>
+            <ul class="feature-list">
+                <li>Authentification sécurisée</li>
+                <li>Gestion des rôles et permissions</li>
+                <li>Audit trail complet</li>
+                <li>Conformité RGPD</li>
+            </ul>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <h3>Performance Optimale</h3>
+            <p>Interface rapide et responsive, accessible partout, sur tous vos appareils.</p>
+                <ul class="feature-list">
+                <li>Interface ultra-rapide</li>
+                <li>Mobile-friendly</li>
+                <li>Mode hors ligne</li>
+                <li>Synchronisation automatique</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="stats-section">
+    <div class="stats-grid">
+        <div class="stat-item">
+            <h3>99.9%</h3>
+            <p>Disponibilité garantie</p>
+        </div>
+        <div class="stat-item">
+            <h3>24/7</h3>
+            <p>Support technique</p>
+        </div>
+        <div class="stat-item">
+            <h3>100%</h3>
+            <p>Satisfaction client</p>
+        </div>
+        <div class="stat-item">
+            <h3>0%</h3>
+            <p>Temps d'arrêt</p>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <div class="cta-card">
+        <div class="cta-content">
+            <h2>Prêt à transformer votre gestion industrielle ?</h2>
+            <p>Rejoignez des centaines d'entreprises qui ont déjà optimisé leurs opérations avec {{ app_name }}.</p>
+            {% if not current_user.is_authenticated %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-white btn-large">
+                    Commencer maintenant
+                </a>
+            {% else %}
+                <a href="{{ url_for('dashboard.index') }}" class="btn btn-white btn-large">
+                    <i class="bi bi-rocket"></i> Explorer le système
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<script>
+    // Smooth scroll pour les ancres
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

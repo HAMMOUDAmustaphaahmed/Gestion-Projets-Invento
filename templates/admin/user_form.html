@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-person-plus"></i> 
+                {% if user %}Modifier l'utilisateur{% else %}Créer un utilisateur{% endif %}
+            </h2>
+            <a href="{{ url_for('admin.users') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Retour
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Informations de l'utilisateur</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.username.label }} *</label>
+                            {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else ""), 
+                               readonly=user is not none) }}
+                            {% if form.username.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.username.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% else %}
+                                <small class="form-text text-muted">
+                                    {% if user %}Le nom d'utilisateur ne peut pas être modifié{% else %}Minimum 3 caractères{% endif %}
+                                </small>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.email.label }} *</label>
+                            {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else ""), 
+                               type="email") }}
+                            {% if form.email.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.email.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.first_name.label }} *</label>
+                            {{ form.first_name(class="form-control" + (" is-invalid" if form.first_name.errors else "")) }}
+                            {% if form.first_name.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.first_name.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.last_name.label }} *</label>
+                            {{ form.last_name(class="form-control" + (" is-invalid" if form.last_name.errors else "")) }}
+                            {% if form.last_name.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.last_name.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.role_id.label }} *</label>
+                        {{ form.role_id(class="form-select" + (" is-invalid" if form.role_id.errors else "")) }}
+                        {% if form.role_id.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.role_id.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% else %}
+                            <small class="form-text text-muted">Le rôle détermine les permissions de l'utilisateur</small>
+                        {% endif %}
+                    </div>
+
+                    {% if not user %}
+                    <hr class="my-4">
+                    <h6 class="mb-3">Mot de passe</h6>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.password.label }} *</label>
+                            <div class="input-group">
+                                {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""), 
+                                   id="password") }}
+                                <button class="btn btn-outline-secondary toggle-password" type="button" data-target="#password">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            {% if form.password.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.password.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% else %}
+                                <small class="form-text text-muted">Minimum 8 caractères</small>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.password2.label }} *</label>
+                            <div class="input-group">
+                                {{ form.password2(class="form-control" + (" is-invalid" if form.password2.errors else ""), 
+                                   id="password2") }}
+                                <button class="btn btn-outline-secondary toggle-password" type="button" data-target="#password2">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            {% if form.password2.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.password2.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Indicateur de force du mot de passe -->
+                    <div class="mb-3">
+                        <label class="form-label">Force du mot de passe</label>
+                        <div class="progress" style="height: 5px;">
+                            <div id="password-strength" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <small id="password-strength-text" class="form-text text-muted"></small>
+                    </div>
+                    {% endif %}
+
+                    {% if user %}
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
+                                   {% if user.is_active %}checked{% endif %}>
+                            <label class="form-check-label" for="is_active">
+                                Compte actif
+                            </label>
+                        </div>
+                        <small class="form-text text-muted">Un compte désactivé ne peut pas se connecter</small>
+                    </div>
+                    {% endif %}
+
+                    <hr class="my-4">
+
+                    <div class="d-flex gap-2">
+                        {{ form.submit(class="btn btn-primary") }}
+                        <a href="{{ url_for('admin.users') }}" class="btn btn-secondary">Annuler</a>
+                        
+                        {% if user and user.id != current_user.id %}
+                        <a href="{{ url_for('auth.reset_password', user_id=user.id) }}" 
+                           class="btn btn-warning ms-auto">
+                            <i class="bi bi-key"></i> Réinitialiser le mot de passe
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if user %}
+        <!-- Informations supplémentaires -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">Informations du compte</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <strong>Date de création:</strong>
+                        <p class="mb-0">{{ format_date(user.created_at, '%d/%m/%Y %H:%M') }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>Dernière connexion:</strong>
+                        <p class="mb-0">
+                            {% if user.last_login %}
+                                {{ format_date(user.last_login, '%d/%m/%Y %H:%M') }}
+                            {% else %}
+                                Jamais connecté
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Rôle actuel:</strong>
+                        <p class="mb-0">
+                            {% if user.role %}
+                                <span class="badge bg-primary">{{ user.role.name }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Aucun rôle</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Statut:</strong>
+                        <p class="mb-0">
+                            {% if user.is_active %}
+                                <span class="badge bg-success">Actif</span>
+                            {% else %}
+                                <span class="badge bg-danger">Désactivé</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Permissions du rôle -->
+        {% if user.role %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">Permissions du rôle "{{ user.role.name }}"</h5>
+            </div>
+            <div class="card-body">
+                {% set permissions = user.get_permissions() %}
+                <div class="row">
+                    {% for module, actions in permissions.items() %}
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-capitalize">{{ module }}</h6>
+                        <ul class="list-unstyled ms-3">
+                            {% for action, granted in actions.items() %}
+                            <li>
+                                <i class="bi bi-{{ 'check-circle text-success' if granted else 'x-circle text-danger' }}"></i>
+                                {{ action.replace('_', ' ').capitalize() }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endfor %}
+                </div>
+                <a href="{{ url_for('admin.roles') }}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-gear"></i> Gérer les rôles
+                </a>
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Vérification de la force du mot de passe
+    $('#password').on('keyup', function() {
+        var password = $(this).val();
+        var strength = 0;
+        var strengthText = '';
+        var strengthClass = '';
+        
+        if (password.length >= 8) strength += 25;
+        if (password.length >= 12) strength += 25;
+        if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength += 25;
+        if (/\d/.test(password)) strength += 12.5;
+        if (/[^a-zA-Z\d]/.test(password)) strength += 12.5;
+        
+        if (strength <= 25) {
+            strengthText = 'Faible';
+            strengthClass = 'bg-danger';
+        } else if (strength <= 50) {
+            strengthText = 'Moyenne';
+            strengthClass = 'bg-warning';
+        } else if (strength <= 75) {
+            strengthText = 'Bonne';
+            strengthClass = 'bg-info';
+        } else {
+            strengthText = 'Excellente';
+            strengthClass = 'bg-success';
+        }
+        
+        $('#password-strength')
+            .css('width', strength + '%')
+            .removeClass('bg-danger bg-warning bg-info bg-success')
+            .addClass(strengthClass);
+        
+        $('#password-strength-text').text(strengthText);
+    });
+    
+    // Validation en temps réel
+    $('#password2').on('keyup', function() {
+        var password = $('#password').val();
+        var password2 = $(this).val();
+        
+        if (password2.length > 0 && password !== password2) {
+            $(this).addClass('is-invalid');
+            $(this).removeClass('is-valid');
+        } else if (password2.length > 0 && password === password2) {
+            $(this).removeClass('is-invalid');
+            $(this).addClass('is-valid');
+        } else {
+            $(this).removeClass('is-invalid is-valid');
+        }
+    });
+});
+</script>
+{% endblock %}

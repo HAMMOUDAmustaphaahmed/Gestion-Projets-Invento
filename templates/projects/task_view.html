@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+
+{% block title %}Tâche - {{ task.name }} - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-card-checklist"></i> {{ task.name }}</h2>
+                <!-- Dans la section des boutons d'actions -->
+<div class="d-flex gap-2">
+    <a href="{{ url_for('projects.view', project_id=task.project.id) }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Retour au projet
+    </a>
+    
+    {% if task.status != 'completed' and task.status != 'cancelled' %}
+        <!-- Bouton pour valider la tâche -->
+        <form method="POST" action="{{ url_for('projects.validate_task', task_id=task.id) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-success" 
+                    onclick="return confirm('Valider cette tâche comme terminée ?')">
+                <i class="bi bi-check-circle"></i> Valider la tâche
+            </button>
+        </form>
+        
+        <!-- Bouton pour terminer avec erreur -->
+        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#errorModal">
+            <i class="bi bi-exclamation-triangle"></i> Terminer avec erreur
+        </button>
+    {% endif %}
+    
+    {% if task.status == 'completed' %}
+        <!-- Bouton pour invalider une tâche terminée -->
+        <a href="{{ url_for('projects.invalidate_task', task_id=task.id) }}" class="btn btn-danger">
+            <i class="bi bi-x-circle"></i> Invalider la tâche
+        </a>
+    {% endif %}
+    
+    {% if current_user.has_permission('tasks', 'update') %}
+        <a href="{{ url_for('projects.edit_task', task_id=task.id) }}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Modifier
+        </a>
+    {% endif %}
+    
+    {% if current_user.has_permission('tasks', 'delete') %}
+        <form method="POST" action="{{ url_for('projects.delete_task', task_id=task.id) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Supprimer cette tâche ?')">
+                <i class="bi bi-trash"></i> Supprimer
+            </button>
+        </form>
+    {% endif %}
+</div>
+
+<!-- Modal pour terminer avec erreur -->
+<div class="modal fade" id="errorModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Terminer avec erreur/justificatif</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('projects.complete_with_error', task_id=task.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Description de l'erreur / justificatif *</label>
+                        <textarea class="form-control" name="error_description" rows="4" 
+                                  placeholder="Décrivez l'erreur ou le problème rencontré..." required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Temps supplémentaire nécessaire</label>
+                        <input type="text" class="form-control" name="additional_time_needed"
+                               placeholder="Ex: 2 jours, 1 semaine...">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-exclamation-triangle"></i> Terminer avec erreur
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Colonne gauche - Informations de la tâche -->
+        <div class="col-lg-8">
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Informations de la tâche</h5>
+                    <div>
+                        {% if task.priority == 'high' %}
+                            <span class="badge bg-danger">Haute priorité</span>
+                        {% elif task.priority == 'medium' %}
+                            <span class="badge bg-warning">Priorité moyenne</span>
+                        {% else %}
+                            <span class="badge bg-success">Basse priorité</span>
+                        {% endif %}
+                        
+                        {% if task.status == 'pending' %}
+                            <span class="badge bg-secondary">En attente</span>
+                        {% elif task.status == 'planning' %}
+                            <span class="badge bg-info">Planification</span>
+                        {% elif task.status == 'in_progress' %}
+                            <span class="badge bg-primary">En cours</span>
+                        {% elif task.status == 'completed' %}
+                            <span class="badge bg-success">Terminée</span>
+                        {% else %}
+                            <span class="badge bg-dark">Annulée</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if task.description %}
+                    <p class="mb-3">{{ task.description }}</p>
+                    <hr>
+                    {% endif %}
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Date de début:</strong>
+                            <p>{{ task.start_date.strftime('%d/%m/%Y') }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Date de fin prévue:</strong>
+                            <p>{{ task.end_date.strftime('%d/%m/%Y') }}</p>
+                        </div>
+                        {% if task.actual_end_date %}
+                        <div class="col-md-12">
+                            <strong>Date de fin réelle:</strong>
+                            <p>{{ task.actual_end_date.strftime('%d/%m/%Y') }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Type de tâche:</strong>
+                            <p>{{ task.task_type_ref.name if task.task_type_ref else 'Non spécifié' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Projet:</strong>
+                            <p><a href="{{ url_for('projects.view', project_id=task.project.id) }}">{{ task.project.name }}</a></p>
+                        </div>
+                    </div>
+                    
+                    {% if task.justification %}
+                    <div class="mb-3">
+                        <strong>Justification:</strong>
+                        <p>{{ task.justification }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if task.notes %}
+                    <div class="mb-3">
+                        <strong>Notes:</strong>
+                        <p>{{ task.notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Matériaux -->
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-box-seam"></i> Matériaux</h5>
+                    <div>
+                        <a href="{{ url_for('projects.task_materials', task_id=task.id) }}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-gear"></i> Gérer les matériaux
+                        </a>
+                        {% if task.use_stock and task.status == 'in_progress' %}
+                        <button type="button" class="btn btn-success btn-sm" onclick="useStock()">
+                            <i class="bi bi-cart-check"></i> Utiliser le stock
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> 
+                        Cette tâche <strong>{% if task.use_stock %}utilise{% else %}n'utilise pas{% endif %}</strong> le stock.
+                    </div>
+                    
+                    {% if stock_items_count > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Matériau</th>
+                                    <th>Quantité estimée</th>
+                                    <th>Unité</th>
+                                    <th>Statut stock</th>
+                                    <th>Quantité utilisée</th>
+                                    <th>Reste à retourner</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in stock_items %}
+                                <tr class="{% if not item.is_quantity_sufficient() %}table-warning{% endif %}">
+                                    <td>
+                                        <a href="{{ url_for('stock.view', item_id=item.stock_item.id) }}">
+                                            {{ item.stock_item.libelle }} ({{ item.stock_item.reference }})
+                                        </a>
+                                    </td>
+                                    <td>{{ item.estimated_quantity }}</td>
+                                    <td>{{ item.unit_type }}</td>
+                                    <td>
+                                        {% if item.is_quantity_sufficient() %}
+                                        <span class="badge bg-success">✓</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">
+                                            Manque {{ item.get_shortage_quantity() }}
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item.actual_quantity_used|default('Non défini') }}</td>
+                                    <td>
+                                        {% if item.return_to_stock %}
+                                        {{ item.remaining_quantity|default(0) }}
+                                        {% else %}
+                                        <span class="badge bg-secondary">Non retourné</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Alertes de manque de stock -->
+                    {% if shortage_items %}
+                    <div class="alert alert-warning mt-3">
+                        <h6><i class="bi bi-exclamation-triangle"></i> Alertes de stock</h6>
+                        <p class="mb-2">Les matériaux suivants ne sont pas disponibles en quantité suffisante :</p>
+                        <ul class="mb-0">
+                            {% for item in shortage_items %}
+                            <li>
+                                <strong>{{ item.stock_item.libelle }}</strong> : 
+                                Besoin {{ item.estimated_quantity }} {{ item.unit_type }} | 
+                                Disponible {{ item.stock_item.quantity|default(0) }} {{ item.stock_item.unit|default('pièce') }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <p class="text-muted mb-0">Aucun matériau assigné à cette tâche</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Coûts supplémentaires -->
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-cash"></i> Coûts supplémentaires</h5>
+                    {% if current_user.has_permission('tasks', 'update') %}
+                    <a href="{{ url_for('projects.manage_additional_costs', task_id=task.id) }}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus"></i> Ajouter
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if additional_costs_count > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Montant</th>
+                                    <th>Date</th>
+                                    <th>Justification</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cost in additional_costs %}
+                                <tr>
+                                    <td>{{ cost.name }}</td>
+                                    <td>{{ cost.amount|format_currency }}</td>
+                                    <td>{{ cost.date.strftime('%d/%m/%Y') }}</td>
+                                    <td>{{ cost.justification|default('', true) }}</td>
+                                    <td class="text-end">
+                                        {% if current_user.has_permission('tasks', 'delete') %}
+                                        <form method="POST" action="{{ url_for('projects.delete_additional_cost', cost_id=cost.id) }}" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Supprimer ce coût ?')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">Aucun coût supplémentaire</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Colonne droite - Assignation et statistiques -->
+        <div class="col-lg-4">
+            <!-- Assignation -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-people"></i> Assignation</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Personnel assigné</h6>
+                    {% if assigned_personnel_count > 0 %}
+                    <ul class="list-group list-group-flush mb-3">
+                        {% for person in assigned_personnel %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <a href="{{ url_for('personnel.view', personnel_id=person.id) }}">
+                                {{ person.get_full_name() }}
+                            </a>
+                            <span class="badge bg-primary rounded-pill">{{ person.employee_id }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted">Aucun personnel assigné</p>
+                    {% endif %}
+                    
+                    <h6>Groupes assignés</h6>
+                    {% if assigned_groups_count > 0 %}
+                    <ul class="list-group list-group-flush">
+                        {% for group in assigned_groups %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <a href="{{ url_for('groups.view', group_id=group.id) }}">
+                                {{ group.name }}
+                            </a>
+                            <span class="badge bg-warning rounded-pill">{{ group.members|length }} membres</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted">Aucun groupe assigné</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Coût de la tâche -->
+            <div class="card mb-3">
+                <div class="card-header bg-success bg-opacity-10">
+                    <h5 class="mb-0 text-success"><i class="bi bi-currency-euro"></i> Coût de la tâche</h5>
+                </div>
+                <div class="card-body">
+                    <h3 class="text-center">{{ task_cost|format_currency }}</h3>
+                    <hr>
+                    <p class="mb-2">
+                        <strong>Coût des matériaux:</strong><br>
+                        <span class="text-muted">{{ stock_items_cost|format_currency }}</span>
+                    </p>
+                    <p class="mb-0">
+                        <strong>Coûts supplémentaires:</strong><br>
+                        <span class="text-muted">{{ additional_costs_total|format_currency }}</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Historique -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Historique</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">
+                        <strong>Créé le:</strong><br>
+                        <small class="text-muted">{{ task.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                    </p>
+                    <p class="mb-0">
+                        <strong>Dernière modification:</strong><br>
+                        <small class="text-muted">{{ task.updated_at.strftime('%d/%m/%Y %H:%M') if task.updated_at else 'Jamais' }}</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function useStock() {
+    if (confirm('Êtes-vous sûr de vouloir utiliser le stock pour cette tâche ? Cette action est irréversible.')) {
+        fetch('{{ url_for("projects.use_stock", task_id=task.id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Stock utilisé avec succès !');
+                location.reload();
+            } else {
+                if (data.insufficient_items) {
+                    let message = 'Stock insuffisant pour:\n';
+                    data.insufficient_items.forEach(item => {
+                        message += `- ${item.name}: besoin ${item.needed}, disponible ${item.available}\n`;
+                    });
+                    alert(message);
+                } else {
+                    alert('Erreur: ' + data.error);
+                }
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

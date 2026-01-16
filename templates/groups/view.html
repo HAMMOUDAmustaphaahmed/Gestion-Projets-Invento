@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}{{ group.name }} - {{ app_name }}{% endblock %}
+
+{% block page_title %}
+<i class="bi bi-people-fill"></i> {{ group.name }}
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{{ url_for('groups.index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Retour
+    </a>
+    {% if current_user.has_permission('personnel', 'update') %}
+    <a href="{{ url_for('groups.edit', group_id=group.id) }}" class="btn btn-warning">
+        <i class="bi bi-pencil"></i> Modifier
+    </a>
+    <a href="{{ url_for('groups.manage_members', group_id=group.id) }}" class="btn btn-primary">
+        <i class="bi bi-person-plus"></i> Gérer les membres
+    </a>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Colonne gauche - Informations du groupe -->
+    <div class="col-lg-4">
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informations</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Nom du groupe:</strong>
+                    <p class="mb-0">{{ group.name }}</p>
+                </div>
+                
+                {% if group.description %}
+                <div class="mb-3">
+                    <strong>Description:</strong>
+                    <p class="mb-0">{{ group.description }}</p>
+                </div>
+                {% endif %}
+                
+                <div class="mb-3">
+                    <strong>Créé le:</strong>
+                    <p class="mb-0">{{ group.created_at|format_datetime }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Statistiques -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Statistiques</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3">
+                            <i class="bi bi-people text-primary fs-2"></i>
+                            <h4 class="mt-2 mb-1">{{ group.members|length }}</h4>
+                            <p class="text-muted small mb-0">Membres</p>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3">
+                            <i class="bi bi-list-task text-success fs-2"></i>
+                            <h4 class="mt-2 mb-1">{{ group.tasks|length }}</h4>
+                            <p class="text-muted small mb-0">Tâches</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Colonne droite - Membres et tâches -->
+    <div class="col-lg-8">
+        <!-- Membres -->
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-people"></i> Membres du groupe</h5>
+                <span class="badge bg-primary">{{ group.members|length }}</span>
+            </div>
+            <div class="card-body">
+                {% if group.members|length > 0 %}
+                <div class="row">
+                    {% for member in group.members %}
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex align-items-center p-3 border rounded">
+                            <div class="me-3">
+                                <i class="bi bi-person-circle text-primary" style="font-size: 2rem;"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <a href="{{ url_for('personnel.view', personnel_id=member.id) }}" 
+                                   class="text-decoration-none fw-bold">
+                                    {{ member.get_full_name() }}
+                                </a>
+                                <br>
+                                <small class="text-muted">
+                                    {{ member.employee_id }}
+                                    {% if member.department %}
+                                     • {{ member.department }}
+                                    {% endif %}
+                                </small>
+                                {% if member.position %}
+                                <br>
+                                <small class="text-muted">{{ member.position }}</small>
+                                {% endif %}
+                            </div>
+                            <div>
+                                {% if member.is_active %}
+                                <span class="badge bg-success">Actif</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactif</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if current_user.has_permission('personnel', 'update') %}
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('groups.manage_members', group_id=group.id) }}" 
+                       class="btn btn-outline-primary">
+                        <i class="bi bi-person-gear"></i> Gérer les membres
+                    </a>
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-person-x text-muted" style="font-size: 3rem;"></i>
+                    <p class="text-muted mt-3">Aucun membre dans ce groupe</p>
+                    {% if current_user.has_permission('personnel', 'update') %}
+                    <a href="{{ url_for('groups.manage_members', group_id=group.id) }}" 
+                       class="btn btn-primary">
+                        <i class="bi bi-person-plus"></i> Ajouter des membres
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Tâches assignées -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-list-task"></i> Tâches assignées</h5>
+                <span class="badge bg-success">{{ group.tasks|length }}</span>
+            </div>
+            <div class="card-body">
+                {% if assigned_tasks %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>Tâche</th>
+                                <th>Projet</th>
+                                <th>Dates</th>
+                                <th>Statut</th>
+                                <th>Priorité</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task in assigned_tasks %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('projects.view_task', task_id=task.id) }}">
+                                        {{ task.name }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('projects.view', project_id=task.project.id) }}">
+                                        {{ task.project.name }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <small>
+                                        {{ task.start_date|format_date }}<br>
+                                        au {{ task.end_date|format_date }}
+                                    </small>
+                                </td>
+                                <td>
+                                    {% if task.status == 'pending' %}
+                                        <span class="badge bg-secondary">En attente</span>
+                                    {% elif task.status == 'in_progress' %}
+                                        <span class="badge bg-primary">En cours</span>
+                                    {% elif task.status == 'completed' %}
+                                        <span class="badge bg-success">Terminée</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Annulée</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if task.priority == 'high' %}
+                                        <i class="bi bi-arrow-up-circle-fill text-danger"></i>
+                                    {% elif task.priority == 'medium' %}
+                                        <i class="bi bi-dash-circle-fill text-warning"></i>
+                                    {% else %}
+                                        <i class="bi bi-arrow-down-circle-fill text-success"></i>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if group.tasks|length > 10 %}
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('groups.group_tasks', group_id=group.id) }}" 
+                       class="btn btn-sm btn-outline-primary">
+                        Voir toutes les tâches ({{ group.tasks|length }})
+                    </a>
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-list-task text-muted" style="font-size: 3rem;"></i>
+                    <p class="text-muted mt-3">Aucune tâche assignée à ce groupe</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actions dangereuses -->
+{% if current_user.has_permission('personnel', 'delete') %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Zone dangereuse</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">
+                    La suppression d'un groupe est irréversible. Les membres ne seront pas supprimés, 
+                    mais le groupe ne pourra plus être assigné à de nouvelles tâches.
+                </p>
+                <form method="POST" action="{{ url_for('groups.delete', group_id=group.id) }}" 
+                      onsubmit="return confirm('Êtes-vous absolument sûr de vouloir supprimer le groupe {{ group.name }} ? Cette action est irréversible.')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Supprimer ce groupe
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

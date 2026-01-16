@@ -1,0 +1,515 @@
+/* ========================================
+   CALENDAR STYLES - Version Améliorée
+   ======================================== */
+
+/* Container principal */
+#calendar {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    min-height: 650px;
+}
+
+/* Personnalisation FullCalendar */
+.fc {
+    --fc-border-color: #e9ecef;
+    --fc-button-bg-color: #0d6efd;
+    --fc-button-border-color: #0d6efd;
+    --fc-button-hover-bg-color: #0b5ed7;
+    --fc-button-hover-border-color: #0a58ca;
+    --fc-button-active-bg-color: #0a58ca;
+    --fc-button-active-border-color: #0a58ca;
+    --fc-today-bg-color: rgba(13, 110, 253, 0.05);
+}
+
+/* Toolbar personnalisé */
+.fc .fc-toolbar {
+    padding: 1rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.fc .fc-toolbar-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2c3e50;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.fc .fc-button {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    text-transform: capitalize;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.fc .fc-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* En-têtes de colonnes */
+.fc .fc-col-header-cell {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 1rem 0.5rem;
+    font-weight: 700;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+/* Cellules des jours */
+.fc .fc-daygrid-day {
+    border-color: #f0f0f0;
+    transition: background-color 0.2s ease;
+}
+
+.fc .fc-daygrid-day:hover {
+    background-color: rgba(13, 110, 253, 0.02);
+}
+
+.fc .fc-daygrid-day.fc-day-today {
+    background-color: rgba(13, 110, 253, 0.08);
+    border: 2px solid rgba(13, 110, 253, 0.3);
+}
+
+.fc .fc-daygrid-day-number {
+    font-weight: 600;
+    color: #495057;
+    padding: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    color: white;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
+}
+
+/* ========================================
+   ÉVÉNEMENTS - Styles de base
+   ======================================== */
+
+.fc-event {
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 4px 8px !important;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 2px 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    font-weight: 500;
+}
+
+.fc-event:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
+
+.fc-event-main {
+    display: flex;
+    align-items: center;
+    padding: 2px 0;
+}
+
+.fc-event-title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+/* Icônes pour les événements */
+.fc-event-task .fc-event-title::before {
+    content: "✓ ";
+    margin-right: 4px;
+    font-weight: bold;
+}
+
+.fc-event-project .fc-event-title::before {
+    content: "📁 ";
+    margin-right: 4px;
+}
+
+/* ========================================
+   ÉVÉNEMENTS - Statuts
+   ======================================== */
+
+/* Tâche en cours */
+.fc-event-in-progress {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%) !important;
+    border-left: 4px solid #0a58ca !important;
+}
+
+/* Tâche complétée */
+.fc-event-completed {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+    border-left: 4px solid #1e7e34 !important;
+    opacity: 0.8;
+}
+
+.fc-event-completed .fc-event-title {
+    text-decoration: line-through;
+}
+
+/* Tâche annulée */
+.fc-event-cancelled {
+    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%) !important;
+    border-left: 4px solid #545b62 !important;
+    opacity: 0.6;
+}
+
+/* Tâche en retard */
+.fc-event-overdue {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+    border-left: 4px solid #bd2130 !important;
+    animation: pulse-overdue 2s infinite;
+}
+
+@keyframes pulse-overdue {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+/* ========================================
+   ÉVÉNEMENTS - Priorités
+   ======================================== */
+
+/* Haute priorité */
+.fc-event-high-priority {
+    background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%) !important;
+    border-left: 4px solid #bd2130 !important;
+    font-weight: 700;
+}
+
+.fc-event-high-priority::after {
+    content: "!";
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-weight: bold;
+    font-size: 1.1em;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Priorité moyenne */
+.fc-event-medium-priority {
+    background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%) !important;
+    border-left: 4px solid #e0a800 !important;
+    color: #212529 !important;
+}
+
+/* Basse priorité */
+.fc-event-low-priority {
+    background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%) !important;
+    border-left: 4px solid #138496 !important;
+}
+
+/* ========================================
+   ÉVÉNEMENTS DE FOND (Projets)
+   ======================================== */
+
+.fc-event-project {
+    opacity: 0.15;
+    border: 2px dashed rgba(13, 110, 253, 0.3) !important;
+    border-radius: 8px !important;
+}
+
+.fc-event-project:hover {
+    opacity: 0.25;
+    transform: none;
+}
+
+/* ========================================
+   TOOLTIPS PERSONNALISÉS
+   ======================================== */
+
+.fc-event[title] {
+    position: relative;
+}
+
+/* Utilise Bootstrap tooltips mais avec style personnalisé */
+.tooltip.custom-calendar-tooltip {
+    font-size: 0.875rem;
+}
+
+.tooltip.custom-calendar-tooltip .tooltip-inner {
+    max-width: 350px;
+    padding: 12px 16px;
+    text-align: left;
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.tooltip.custom-calendar-tooltip .tooltip-arrow::before {
+    border-top-color: #2c3e50;
+}
+
+/* ========================================
+   STATISTIQUES
+   ======================================== */
+
+.stats-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    border-left: 4px solid #0d6efd;
+}
+
+.stats-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.stats-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.stats-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2c3e50;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.stats-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ========================================
+   ÉVÉNEMENTS À VENIR (Liste)
+   ======================================== */
+
+.upcoming-events-list {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.upcoming-events-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.upcoming-events-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.upcoming-events-list::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.upcoming-events-list::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.upcoming-events-list .list-group-item {
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+    padding: 1rem;
+    transition: all 0.3s ease;
+}
+
+.upcoming-events-list .list-group-item:hover {
+    background-color: #f8f9fa;
+    transform: translateX(4px);
+    border-left: 4px solid #0d6efd;
+}
+
+.upcoming-events-list .list-group-item:first-child {
+    border-top: none;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.upcoming-events-list .list-group-item:last-child {
+    border-bottom: none;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+/* ========================================
+   MODAL DE DÉTAILS
+   ======================================== */
+
+#eventDetailsModal .modal-content {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+#eventDetailsModal .modal-header {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    color: white;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    padding: 1.5rem;
+}
+
+#eventDetailsModal .modal-header .btn-close {
+    filter: brightness(0) invert(1);
+}
+
+#eventDetailsModal .modal-body {
+    padding: 2rem;
+}
+
+#eventDetailsModal .modal-body strong {
+    color: #495057;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#eventDetailsModal .modal-body p {
+    margin-bottom: 1rem;
+    color: #212529;
+}
+
+#eventDetailsModal .modal-footer {
+    border-top: 1px solid #e9ecef;
+    padding: 1.5rem;
+}
+
+/* ========================================
+   FILTRES
+   ======================================== */
+
+.card .input-group-text {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+.form-select:focus,
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (max-width: 768px) {
+    #calendar {
+        padding: 1rem;
+        min-height: 500px;
+    }
+    
+    .fc .fc-toolbar {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 0.75rem;
+    }
+    
+    .fc .fc-toolbar-title {
+        font-size: 1.25rem;
+    }
+    
+    .fc .fc-button {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+    }
+    
+    .stats-card {
+        margin-bottom: 1rem;
+    }
+    
+    .stats-number {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 576px) {
+    #calendar {
+        min-height: 400px;
+    }
+    
+    .fc-event {
+        font-size: 0.75rem;
+        padding: 2px 4px !important;
+    }
+    
+    .fc .fc-daygrid-day-number {
+        font-size: 0.85rem;
+        padding: 0.25rem;
+    }
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fc-event {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* ========================================
+   IMPRESSION
+   ======================================== */
+
+@media print {
+    #calendar {
+        box-shadow: none;
+        border: 1px solid #dee2e6;
+        height: auto !important;
+        min-height: auto;
+    }
+    
+    .fc .fc-toolbar,
+    .stats-card,
+    .card-header button,
+    .no-print {
+        display: none !important;
+    }
+    
+    .fc-event {
+        box-shadow: none !important;
+        page-break-inside: avoid;
+    }
+    
+    @page {
+        margin: 1cm;
+    }
+}

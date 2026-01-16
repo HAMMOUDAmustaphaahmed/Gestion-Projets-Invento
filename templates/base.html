@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="fr" data-bs-theme="auto">
+<head>
+    <meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ app_name }}{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <!-- DataTables -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    
+    <!-- FullCalendar -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
+    
+    <!-- Select2 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('main.index') }}">
+                <i class="bi bi-tools"></i> {{ app_name }}
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarMain">
+                {% if current_user.is_authenticated %}
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('dashboard.index') }}">
+                            <i class="bi bi-speedometer2"></i> Tableau de bord
+                        </a>
+                    </li>
+                    
+                    {% if current_permissions.stock.read %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-box-seam"></i> Stock
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('stock.index') }}">Gestion du stock</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('stock.suppliers') }}">Fournisseurs</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('stock.categories') }}">Catégories</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('stock.alerts') }}">Alertes</a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                    
+                    {% if current_permissions.projects.read %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-kanban"></i> Projets
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('projects.index') }}">Liste des projets</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('projects.task_types') }}">Types de tâches</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('clients.index') }}"> Clients</a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+
+                    {% if current_permissions.projects.read %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="interventionsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-tools me-1"></i> Les interventions
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="interventionsDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('interventions.index') }}">Liste des interventions</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('interventions.types') }}">Types des interventions</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('interventions.classes') }}">Classes des interventions</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('interventions.entities') }}">Les entités</a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                    
+{% if current_permissions.equipments.read %}
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+        <i class="bi bi-pc-display"></i> Équipements
+    </a>
+    <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="{{ url_for('equipments.index') }}">
+            <i class="bi bi-list-ul"></i> Liste des équipements
+        </a></li>
+        <li><a class="dropdown-item" href="{{ url_for('equipments.add') }}">
+            <i class="bi bi-plus-circle"></i> Ajouter un équipement
+        </a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="{{ url_for('equipments.categories') }}">
+            <i class="bi bi-tags"></i> Catégories d'équipements
+        </a></li>
+        <li><a class="dropdown-item" href="{{ url_for('equipments.add_category') }}">
+            <i class="bi bi-plus-circle"></i> Ajouter une catégorie
+        </a></li>
+    </ul>
+</li>
+{% endif %}
+                    
+                    {% if current_permissions.personnel.read %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-people"></i> Personnel
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('personnel.index') }}">Gestion du personnel</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('groups.index') }}">Groupes</a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                    
+                    {% if current_permissions.calendar.read %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('calendar.index') }}">
+                            <i class="bi bi-calendar-event"></i> Calendrier
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% if current_user.role and current_user.role.name == 'admin' %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-gear"></i> Administration
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('admin.index') }}">Tableau de bord admin</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.users') }}">Utilisateurs</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.roles') }}">Rôles</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.notifications') }}">Notifications</a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                </ul>
+                
+                <!-- Search form -->
+               
+                
+                <!-- User menu -->
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ current_user.get_full_name() }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                                <i class="bi bi-person"></i> Mon profil
+                            </a></li>
+                            
+                            <li><a class="dropdown-item" href="{{ url_for('dashboard.custom') }}">
+                                <i class="bi bi-grid-3x3-gap"></i> Personnaliser le dashboard
+                            </a></li>
+                            
+                            <li><hr class="dropdown-divider"></li>
+                            
+                            <li>
+                                <a class="dropdown-item position-relative" href="{{ url_for('admin.notifications') }}">
+                                    <i class="bi bi-bell"></i> Notifications
+                                    {% if unread_notifications > 0 %}
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                        {{ unread_notifications }}
+                                        <span class="visually-hidden">notifications non lues</span>
+                                    </span>
+                                    {% endif %}
+                                </a>
+                            </li>
+                            
+                            <li><hr class="dropdown-divider"></li>
+                            
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                                <i class="bi bi-box-arrow-right"></i> Déconnexion
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <main class="container-fluid py-3">
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <!-- Page title -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>{% block page_title %}{% endblock %}</h1>
+            {% block page_actions %}{% endblock %}
+        </div>
+        
+        <!-- Page content -->
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer mt-auto py-3 bg-light border-top">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-6">
+                    <span class="text-muted">
+                        &copy; {{ current_year }} {{ app_name }} v{{ app_version }}
+                    </span>
+                </div>
+                <div class="col-md-6 text-end">
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/fr.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    {% block extra_js %}{% endblock %}
+    
+    <!-- Initialize scripts -->
+    <script>
+        $(document).ready(function() {
+            // Activer DataTables sur les tables avec la classe datatable
+            $('.datatable').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/fr-FR.json'
+                },
+                pageLength: 25,
+                responsive: true,
+                order: []
+            });
+            
+            // Auto-dismiss alerts after 5 seconds
+            setTimeout(function() {
+                $('.alert').alert('close');
+            }, 5000);
+            
+            // Initialize Select2
+            $('.select2').select2({
+                theme: 'bootstrap-5',
+                width: '100%'
+            });
+            
+            // Tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
+</body>
+</html>

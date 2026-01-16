@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Mon Profil - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-person-circle"></i> Mon Profil
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Informations de l'utilisateur -->
+                    <div class="row mb-4">
+                        <div class="col-md-3 text-center">
+                            <div class="avatar-circle mb-3" style="width: 120px; height: 120px; background-color: #0d6efd; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: white; font-size: 48px;">
+                                {{ current_user.username[0].upper() }}
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <h3>{{ current_user.get_full_name() }}</h3>
+                            <p class="text-muted mb-2">
+                                <i class="bi bi-person-badge"></i> 
+                                {{ current_user.role.name|title if current_user.role else 'Aucun rôle' }}
+                            </p>
+                            <p class="mb-2">
+                                <i class="bi bi-envelope"></i> 
+                                {{ current_user.email }}
+                            </p>
+                            <p class="mb-0">
+                                <i class="bi bi-calendar-event"></i> 
+                                Membre depuis {{ current_user.created_at.strftime('%d/%m/%Y') }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Informations du compte -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Informations du compte</h5>
+                            <form method="POST" action="{{ url_for('auth.update_profile') }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Nom d'utilisateur</label>
+                                    <input type="text" class="form-control" value="{{ current_user.username }}" readonly>
+                                    <small class="form-text text-muted">Le nom d'utilisateur ne peut pas être modifié</small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Nom</label>
+                                    <input type="text" class="form-control" name="last_name" 
+                                           value="{{ current_user.last_name or '' }}">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Prénom</label>
+                                    <input type="text" class="form-control" name="first_name" 
+                                           value="{{ current_user.first_name or '' }}">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-control" name="email" 
+                                           value="{{ current_user.email }}" required>
+                                </div>
+
+                                
+
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-lg"></i> Mettre à jour
+                                </button>
+                            </form>
+                        </div>
+
+                        <div class="col-md-6">
+                            <!-- Changer le mot de passe -->
+                            <h5>Changer le mot de passe</h5>
+                            <form method="POST" action="{{ url_for('auth.change_password') }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Mot de passe actuel</label>
+                                    <input type="password" class="form-control" name="current_password" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Nouveau mot de passe</label>
+                                    <input type="password" class="form-control" name="new_password" required>
+                                    <small class="form-text text-muted">Minimum 8 caractères</small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Confirmer le nouveau mot de passe</label>
+                                    <input type="password" class="form-control" name="confirm_password" required>
+                                </div>
+
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="bi bi-key"></i> Changer le mot de passe
+                                </button>
+                            </form>
+
+                            <hr class="my-4">
+
+                            <!-- Paramètres -->
+                            <h5>Paramètres</h5>
+                            <div class="list-group">
+                                <a href="{{ url_for('dashboard.custom') }}" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-grid-3x3-gap"></i> Personnaliser le tableau de bord
+                                </a>
+                                
+                                {% if current_user.role and current_user.role.name == 'admin' %}
+                                <a href="{{ url_for('admin.index') }}" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-gear"></i> Administration
+                                </a>
+                                {% endif %}
+                                
+                                <a href="{{ url_for('auth.logout') }}" class="list-group-item list-group-item-action text-danger">
+                                    <i class="bi bi-box-arrow-right"></i> Déconnexion
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistiques de l'utilisateur -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Mes statistiques</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-3">
+                            <div class="card border-primary">
+                                <div class="card-body">
+                                    <h3 class="text-primary">{{ user_stats.projects or 0 }}</h3>
+                                    <p class="mb-0">Projets</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card border-success">
+                                <div class="card-body">
+                                    <h3 class="text-success">{{ user_stats.tasks or 0 }}</h3>
+                                    <p class="mb-0">Tâches assignées</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card border-info">
+                                <div class="card-body">
+                                    <h3 class="text-info">{{ user_stats.notifications or 0 }}</h3>
+                                    <p class="mb-0">Notifications</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card border-warning">
+                                <div class="card-body">
+                                    <h3 class="text-warning">{{ user_stats.activity_days or 0 }}</h3>
+                                    <p class="mb-0">Jours d'activité</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.avatar-circle {
+    transition: transform 0.3s;
+}
+
+.avatar-circle:hover {
+    transform: scale(1.05);
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validation des formulaires
+    const profileForm = document.querySelector('form[action*="update_profile"]');
+    const passwordForm = document.querySelector('form[action*="change_password"]');
+    
+    if (profileForm) {
+        profileForm.addEventListener('submit', function(e) {
+            const email = this.querySelector('input[name="email"]');
+            if (email && !email.value) {
+                e.preventDefault();
+                alert('L\'email est obligatoire');
+                email.focus();
+            }
+        });
+    }
+    
+    if (passwordForm) {
+        passwordForm.addEventListener('submit', function(e) {
+            const newPassword = this.querySelector('input[name="new_password"]');
+            const confirmPassword = this.querySelector('input[name="confirm_password"]');
+            
+            if (newPassword.value.length < 8) {
+                e.preventDefault();
+                alert('Le nouveau mot de passe doit contenir au moins 8 caractères');
+                newPassword.focus();
+                return;
+            }
+            
+            if (newPassword.value !== confirmPassword.value) {
+                e.preventDefault();
+                alert('Les mots de passe ne correspondent pas');
+                confirmPassword.focus();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

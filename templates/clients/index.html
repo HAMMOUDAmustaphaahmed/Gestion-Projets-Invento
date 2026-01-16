@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - {{ super() }}{% endblock %}
+
+{% block page_title %}
+    <i class="bi bi-people"></i> Gestion des Clients
+{% endblock %}
+
+{% block page_actions %}
+    {% if current_permissions.projects.create %}
+    <a href="{{ url_for('clients.add') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Ajouter un client
+    </a>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- Statistiques -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="bi bi-people stats-icon text-primary"></i>
+                <div class="stats-number">{{ stats.total }}</div>
+                <div class="stats-label">Total Clients</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="bi bi-check-circle stats-icon text-success"></i>
+                <div class="stats-number">{{ stats.active }}</div>
+                <div class="stats-label">Clients Actifs</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="bi bi-x-circle stats-icon text-secondary"></i>
+                <div class="stats-number">{{ stats.inactive }}</div>
+                <div class="stats-label">Clients Inactifs</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtres et recherche -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('clients.index') }}" class="row g-3">
+            <div class="col-md-6">
+                <input type="text" name="search" class="form-control" 
+                       placeholder="Rechercher un client..." 
+                       value="{{ search }}">
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select">
+                    <option value="">Tous les statuts</option>
+                    <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Actifs</option>
+                    <option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>Inactifs</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Rechercher
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Liste des clients -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Liste des Clients</h5>
+    </div>
+    <div class="card-body">
+        {% if clients.items %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Société</th>
+                        <th>Contact</th>
+                        <th>Email</th>
+                        <th>Téléphone</th>
+                        <th>Ville</th>
+                        <th>Projets</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for client in clients.items %}
+                    <tr>
+                        <td>
+                            <strong>{{ client.name }}</strong>
+                        </td>
+                        <td>{{ client.company or '-' }}</td>
+                        <td>{{ client.contact_person or '-' }}</td>
+                        <td>
+                            {% if client.email %}
+                            <a href="mailto:{{ client.email }}">{{ client.email }}</a>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if client.phone %}
+                            <a href="tel:{{ client.phone }}">{{ client.phone }}</a>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>{{ client.city or '-' }}</td>
+                        <td>
+                            <span class="badge bg-info">
+                                {{ client.projects.count() }} projet(s)
+                            </span>
+                        </td>
+                        <td>
+                            {% if client.is_active %}
+                            <span class="badge bg-success">Actif</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactif</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('clients.view', client_id=client.id) }}" 
+                                   class="btn btn-outline-primary" 
+                                   data-bs-toggle="tooltip" 
+                                   title="Voir">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if current_permissions.projects.update %}
+                                <a href="{{ url_for('clients.edit', client_id=client.id) }}" 
+                                   class="btn btn-outline-warning" 
+                                   data-bs-toggle="tooltip" 
+                                   title="Modifier">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% endif %}
+                                {% if current_permissions.projects.delete %}
+                                <button type="button" 
+                                        class="btn btn-outline-danger" 
+                                        data-bs-toggle="tooltip" 
+                                        title="Supprimer"
+                                        onclick="deleteClient({{ client.id }}, '{{ client.name }}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if clients.pages > 1 %}
+        <nav aria-label="Navigation pagination">
+            <ul class="pagination justify-content-center mt-3">
+                <li class="page-item {% if not clients.has_prev %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('clients.index', page=clients.prev_num, search=search, status=selected_status) }}">
+                        Précédent
+                    </a>
+                </li>
+                
+                {% for page_num in clients.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                    {% if page_num %}
+                        <li class="page-item {% if page_num == clients.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('clients.index', page=page_num, search=search, status=selected_status) }}">
+                                {{ page_num }}
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                
+                <li class="page-item {% if not clients.has_next %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('clients.index', page=clients.next_num, search=search, status=selected_status) }}">
+                        Suivant
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        {% endif %}
+        {% else %}
+        <div class="alert alert-info text-center">
+            <i class="bi bi-info-circle"></i>
+            Aucun client trouvé.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteClient(clientId, clientName) {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer le client "${clientName}" ?`)) {
+        fetch(`/clients/${clientId}/delete`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Erreur lors de la suppression du client');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors de la suppression du client');
+        });
+    }
+}
+</script>
+{% endblock %}

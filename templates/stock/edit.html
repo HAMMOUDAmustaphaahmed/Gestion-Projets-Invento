@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-pencil-square"></i> Modifier l'élément de stock</h2>
+            <a href="{{ url_for('stock.index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Retour
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Informations générales</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+                    <input type="hidden" name="item_id" value="{{ item.id }}">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.reference.label }} *</label>
+                            {{ form.reference(class="form-control" + (" is-invalid" if form.reference.errors else "")) }}
+                            {% if form.reference.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.reference.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.item_type.label }} *</label>
+                            {{ form.item_type(class="form-select" + (" is-invalid" if form.item_type.errors else "")) }}
+                            {% if form.item_type.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.item_type.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.libelle.label }} *</label>
+                        {{ form.libelle(class="form-control" + (" is-invalid" if form.libelle.errors else "")) }}
+                        {% if form.libelle.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.libelle.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.quantity.label }}</label>
+                            {{ form.quantity(class="form-control quantity-input") }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.min_quantity.label }}</label>
+                            {{ form.min_quantity(class="form-control") }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.price.label }}</label>
+                            <div class="input-group">
+                                {{ form.price(class="form-control price-input", step="0.01") }}
+                                <span class="input-group-text">€</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Valeur totale</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control value-display" readonly value="{{ item.value | format_currency }}">
+                            <span class="input-group-text">€</span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.supplier_id.label }}</label>
+                            {{ form.supplier_id(class="form-select") }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.category_id.label }}</label>
+                            {{ form.category_id(class="form-select") }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.location.label }}</label>
+                        {{ form.location(class="form-control") }}
+                    </div>
+
+                    <!-- Attributs dynamiques -->
+                    <div id="dynamic-attributes" class="mb-3">
+                        <h6>Attributs spécifiques</h6>
+                        <div id="attributes-container">
+                            {% for attr in item.attributes %}
+                            <div class="row mb-2 attribute-row">
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" name="attr_name[]" value="{{ attr.name }}" placeholder="Nom de l'attribut">
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" name="attr_value[]" value="{{ attr.value }}" placeholder="Valeur">
+                                </div>
+                                <div class="col-md-3">
+                                    <select class="form-select" name="attr_type[]">
+                                        <option value="string" {% if attr.data_type == 'string' %}selected{% endif %}>Texte</option>
+                                        <option value="number" {% if attr.data_type == 'number' %}selected{% endif %}>Nombre</option>
+                                        <option value="decimal" {% if attr.data_type == 'decimal' %}selected{% endif %}>Décimal</option>
+                                        <option value="date" {% if attr.data_type == 'date' %}selected{% endif %}>Date</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-1">
+                                    <button type="button" class="btn btn-danger btn-sm remove-attribute">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="add-attribute">
+                            <i class="bi bi-plus"></i> Ajouter un attribut
+                        </button>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.notes.label }}</label>
+                        {{ form.notes(class="form-control", rows=4) }}
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        {{ form.submit(class="btn btn-primary") }}
+                        <a href="{{ url_for('stock.view', item_id=item.id) }}" class="btn btn-secondary">Annuler</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Fichiers attachés -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">Fichiers attachés</h5>
+            </div>
+            <div class="card-body">
+                {% if item.files.count() > 0 %}
+                <ul class="list-group list-group-flush">
+                    {% for file in item.files %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-file-earmark-{{ file.file_type }}"></i>
+                            <a href="{{ url_for('stock.download_file', file_id=file.id) }}">
+                                {{ file.original_filename }}
+                            </a>
+                            {% if file.description %}
+                            <br><small class="text-muted">{{ file.description }}</small>
+                            {% endif %}
+                        </div>
+                        <form method="POST" action="{{ url_for('stock.delete_file', file_id=file.id) }}" class="d-inline">
+                            {{ csrf_token() }}
+                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Supprimer ce fichier ?')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted mb-0">Aucun fichier attaché</p>
+                {% endif %}
+                
+                <hr>
+                
+                <form method="POST" action="{{ url_for('stock.upload_file', item_id=item.id) }}" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-2">
+                        <label class="form-label">Ajouter un fichier</label>
+                        <input type="file" class="form-control form-control-sm" name="file" accept=".pdf,.png,.jpg,.jpeg">
+                    </div>
+                    <div class="mb-2">
+                        <input type="text" class="form-control form-control-sm" name="description" placeholder="Description (optionnel)">
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-upload"></i> Uploader
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Historique -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Informations</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">
+                    <strong>Créé le:</strong><br>
+                    {{ item.created_at | format_date('%d/%m/%Y %H:%M') }}
+                </p>
+                <p class="mb-0">
+                    <strong>Modifié le:</strong><br>
+                    {{ item.updated_at | format_date('%d/%m/%Y %H:%M') }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Ajouter un attribut
+    $('#add-attribute').on('click', function() {
+        var newRow = `
+            <div class="row mb-2 attribute-row">
+                <div class="col-md-4">
+                    <input type="text" class="form-control" name="attr_name[]" placeholder="Nom de l'attribut">
+                </div>
+                <div class="col-md-4">
+                    <input type="text" class="form-control" name="attr_value[]" placeholder="Valeur">
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" name="attr_type[]">
+                        <option value="string">Texte</option>
+                        <option value="number">Nombre</option>
+                        <option value="decimal">Décimal</option>
+                        <option value="date">Date</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <button type="button" class="btn btn-danger btn-sm remove-attribute">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        $('#attributes-container').append(newRow);
+    });
+
+    // Supprimer un attribut
+    $(document).on('click', '.remove-attribute', function() {
+        $(this).closest('.attribute-row').remove();
+    });
+});
+</script>
+{% endblock %}

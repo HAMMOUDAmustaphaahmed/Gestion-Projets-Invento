@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Créer un utilisateur - {{ app_name }}{% endblock %}
+
+{% block page_title %}
+Créer un nouvel utilisateur
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Informations de l'utilisateur</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('auth.register') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="username" class="form-label">Nom d'utilisateur *</label>
+                            {{ form.username(class="form-control", placeholder="Nom d'utilisateur") }}
+                            {% if form.username.errors %}
+                                {% for error in form.username.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                            <div class="form-text">3 à 64 caractères</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">Email *</label>
+                            {{ form.email(class="form-control", placeholder="email@exemple.com", type="email") }}
+                            {% if form.email.errors %}
+                                {% for error in form.email.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="first_name" class="form-label">Prénom *</label>
+                            {{ form.first_name(class="form-control", placeholder="Prénom") }}
+                            {% if form.first_name.errors %}
+                                {% for error in form.first_name.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="last_name" class="form-label">Nom *</label>
+                            {{ form.last_name(class="form-control", placeholder="Nom") }}
+                            {% if form.last_name.errors %}
+                                {% for error in form.last_name.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="password" class="form-label">Mot de passe *</label>
+                            <div class="input-group">
+                                {{ form.password(class="form-control", placeholder="Mot de passe", id="password") }}
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            {% if form.password.errors %}
+                                {% for error in form.password.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                            <div class="form-text">Minimum 8 caractères</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="password2" class="form-label">Confirmer le mot de passe *</label>
+                            <div class="input-group">
+                                {{ form.password2(class="form-control", placeholder="Confirmer le mot de passe", id="password2") }}
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword2">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            {% if form.password2.errors %}
+                                {% for error in form.password2.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="role_id" class="form-label">Rôle *</label>
+                        {{ form.role_id(class="form-select") }}
+                        {% if form.role_id.errors %}
+                            {% for error in form.role_id.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('admin.users') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Retour
+                        </a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('togglePassword').addEventListener('click', function() {
+    const password = document.getElementById('password');
+    const icon = this.querySelector('i');
+    
+    if (password.type === 'password') {
+        password.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        password.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+});
+
+document.getElementById('togglePassword2').addEventListener('click', function() {
+    const password2 = document.getElementById('password2');
+    const icon = this.querySelector('i');
+    
+    if (password2.type === 'password') {
+        password2.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        password2.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+});
+</script>
+{% endblock %}

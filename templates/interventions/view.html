@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Intervention #{{ intervention.intervention_number }}</h1>
+            <p class="text-muted mb-0">{{ intervention.client_name }}</p>
+        </div>
+        <div>
+            <a href="{{ url_for('interventions.edit', id=intervention.id) }}" class="btn btn-primary">
+                <i class="bi bi-pencil me-1"></i> Modifier
+            </a>
+            <a href="{{ url_for('interventions.index') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Retour
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Informations principales -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Informations de l'intervention</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th style="width: 40%;">N° d'intervention:</th>
+                                    <td><strong>{{ intervention.intervention_number }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <th>Client:</th>
+                                    <td>{{ intervention.client_name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Emplacement:</th>
+                                    <td>{{ intervention.location or 'Non spécifié' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Type:</th>
+                                    <td>{{ intervention.type.name if intervention.type else 'Non spécifié' }}</td>
+                                </tr>
+                                <tr>
+                                    <!-- CHANGÉ: intervention.intervention_class au lieu de intervention.class -->
+                                    <th>Classe:</th>
+                                    <td>{{ intervention.intervention_class.name if intervention.intervention_class else 'Non spécifié' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Entité:</th>
+                                    <td>{{ intervention.entity.name if intervention.entity else 'Non spécifié' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th style="width: 40%;">État:</th>
+                                    <td>
+                                        <span class="badge bg-{{ 
+                                            'info' if intervention.status == 'planned' 
+                                            else 'warning' if intervention.status == 'in_progress' 
+                                            else 'success' if intervention.status == 'completed' 
+                                            else 'danger' 
+                                        }}">
+                                            {{ intervention.get_status_label() }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Date contact client:</th>
+                                    <td>{{ intervention.client_contact_date.strftime('%d/%m/%Y') if intervention.client_contact_date else '' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Date intervention:</th>
+                                    <td>{{ intervention.intervention_date.strftime('%d/%m/%Y') if intervention.intervention_date else '' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Date fin prévue:</th>
+                                    <td>{{ intervention.planned_end_date.strftime('%d/%m/%Y') if intervention.planned_end_date else '' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Date fin réelle:</th>
+                                    <td>{{ intervention.actual_end_date.strftime('%d/%m/%Y') if intervention.actual_end_date else 'Non spécifié' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Créée par:</th>
+                                    <td>{{ intervention.creator.username if intervention.creator else '' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Descriptions -->
+                    {% if intervention.anomaly_description %}
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-2">Description de l'anomalie</h6>
+                        <div class="border rounded p-3 bg-light">
+                            {{ intervention.anomaly_description|nl2br }}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if intervention.tasks_description %}
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-2">Description des tâches</h6>
+                        <div class="border rounded p-3 bg-light">
+                            {{ intervention.tasks_description|nl2br }}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Projet lié -->
+                    {% if intervention.linked_to_project and intervention.project %}
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-link-45deg me-2"></i>Liée au projet</h6>
+                        <p class="mb-0">
+                            <strong>{{ intervention.project.name }}</strong><br>
+                            Client: {{ intervention.project.client.name if intervention.project.client else '' }}<br>
+                            Statut: {{ intervention.project.status }}
+                        </p>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Justificatif de retard -->
+                    {% if intervention.justification_delay %}
+                    <div class="alert alert-warning">
+                        <h6><i class="bi bi-clock-history me-2"></i>Justificatif de retard</h6>
+                        <p class="mb-0">{{ intervention.justification_delay|nl2br }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Personnel -->
+            {% if intervention.personnel.count() > 0 %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Personnel affecté</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for person in intervention.personnel %}
+                        <div class="col-md-4 mb-2">
+                            <div class="border rounded p-3">
+                                <h6 class="mb-1">{{ person.get_full_name() }}</h6>
+                                <small class="text-muted">
+                                    {{ person.position or '' }}<br>
+                                    {{ person.department or '' }}
+                                </small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Actions et métadonnées -->
+        <div class="col-lg-4">
+            <!-- Coût total -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Coût total</h5>
+                </div>
+                <div class="card-body text-center">
+                    <h2 class="text-primary">{{ intervention.calculate_total_cost()|format_currency }}</h2>
+                    <small class="text-muted">Coût estimé de l'intervention</small>
+                </div>
+            </div>
+            
+            <!-- Gestion du stock -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Articles de stock</h5>
+                    <a href="{{ url_for('interventions.manage_stock', id=intervention.id) }}" 
+                       class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-plus"></i> Ajouter
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if intervention.stock_items.count() > 0 %}
+                    <div class="list-group list-group-flush">
+                        {% for item in intervention.stock_items %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ item.stock_item.libelle if item.stock_item else 'Article inconnu' }}</h6>
+                                    <small class="text-muted">
+                                        Réf: {{ item.stock_item.reference if item.stock_item else '' }}<br>
+                                        Prévision: {{ item.estimated_quantity }}<br>
+                                        Utilisé: {{ item.actual_quantity or 'Non renseigné' }}
+                                    </small>
+                                </div>
+                                {% if item.validated %}
+                                <span class="badge bg-success">Validé</span>
+                                {% else %}
+                                <span class="badge bg-warning">Non validé</span>
+                                {% endif %}
+                            </div>
+                            {% if item.justification %}
+                            <small class="text-muted d-block mt-1">
+                                <em>{{ item.justification }}</em>
+                            </small>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted mb-0">Aucun article de stock</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Coûts supplémentaires -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Coûts supplémentaires</h5>
+                    <a href="{{ url_for('interventions.manage_costs', id=intervention.id) }}" 
+                       class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-plus"></i> Ajouter
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if intervention.costs.count() > 0 %}
+                    <div class="list-group list-group-flush">
+                        {% for cost in intervention.costs %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>{{ cost.cost_name }}</span>
+                                <span class="text-primary">{{ cost.amount|format_currency }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted mb-0">Aucun coût supplémentaire</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Métadonnées -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Métadonnées</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th>Créée le:</th>
+                            <td>{{ intervention.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Dernière modification:</th>
+                            <td>{{ intervention.updated_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                        </tr>
+                        {% if intervention.creator %}
+                        <tr>
+                            <th>Créée par:</th>
+                            <td>{{ intervention.creator.get_full_name() }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

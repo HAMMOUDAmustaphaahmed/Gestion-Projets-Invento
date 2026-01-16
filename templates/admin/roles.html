@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-shield-check"></i> Gestion des rôles</h2>
+            <a href="{{ url_for('admin.create_role') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Créer un rôle
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Rôles existants</h5>
+            </div>
+            <div class="card-body">
+                {% if roles %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Description</th>
+                                <th>Utilisateurs</th>
+                                <th>Permissions</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for role in roles %}
+                            <tr>
+                                <td>
+                                    <strong>{{ role.name }}</strong>
+                                    {% if role.name == 'admin' %}
+                                    <span class="badge bg-danger ms-2">Super Admin</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ role.description or '-' }}
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">
+                                        {{ role.users.count() }} utilisateur(s)
+                                    </span>
+                                </td>
+                                <td>
+                                    {% set permissions = role.get_permissions() %}
+                                    {% set total_permissions = namespace(count=0, granted=0) %}
+                                    {% for module, actions in permissions.items() %}
+                                        {% for action, granted in actions.items() %}
+                                            {% set total_permissions.count = total_permissions.count + 1 %}
+                                            {% if granted %}
+                                                {% set total_permissions.granted = total_permissions.granted + 1 %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endfor %}
+                                    
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress flex-grow-1 me-2" style="height: 20px;">
+                                            <div class="progress-bar bg-success" 
+                                                 style="width: {{ (total_permissions.granted / total_permissions.count * 100) if total_permissions.count > 0 else 0 }}%">
+                                                {{ total_permissions.granted }}/{{ total_permissions.count }}
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-info" 
+                                                data-bs-toggle="collapse" 
+                                                data-bs-target="#permissions-{{ role.id }}">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('admin.role_permissions', role_id=role.id) }}" 
+                                           class="btn btn-sm btn-outline-primary"
+                                           data-bs-toggle="tooltip" title="Gérer les permissions">
+                                            <i class="bi bi-key"></i>
+                                        </a>
+                                        <a href="{{ url_for('admin.edit_role', role_id=role.id) }}" 
+                                           class="btn btn-sm btn-outline-warning"
+                                           data-bs-toggle="tooltip" title="Modifier">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        {% if role.name != 'admin' %}
+                                        <form method="POST" action="{{ url_for('admin.delete_role', role_id=role.id) }}" 
+                                              class="d-inline"
+                                              onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce rôle ?')">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" 
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    data-bs-toggle="tooltip" title="Supprimer"
+                                                    {% if role.users.count() > 0 %}disabled{% endif %}>
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr class="collapse" id="permissions-{{ role.id }}">
+                                <td colspan="5" class="bg-light">
+                                    <div class="p-3">
+                                        <h6 class="mb-3">Détails des permissions pour "{{ role.name }}"</h6>
+                                        <div class="row">
+                                            {% for module, actions in permissions.items() %}
+                                            <div class="col-md-4 mb-3">
+                                                <div class="card">
+                                                    <div class="card-header py-2 bg-primary bg-opacity-10">
+                                                        <h6 class="mb-0 text-capitalize">
+                                                            <i class="bi bi-{{ 
+                                                                'box-seam' if module == 'stock' else
+                                                                'folder' if module == 'projects' else
+                                                                'list-check' if module == 'tasks' else
+                                                                'people' if module == 'personnel' else
+                                                                'calendar' if module == 'calendar' else
+                                                                'speedometer2'
+                                                            }}"></i>
+                                                            {{ module }}
+                                                        </h6>
+                                                    </div>
+                                                    <div class="card-body py-2">
+                                                        <ul class="list-unstyled mb-0 small">
+                                                            {% for action, granted in actions.items() %}
+                                                            <li>
+                                                                <i class="bi bi-{{ 'check-circle text-success' if granted else 'x-circle text-muted' }}"></i>
+                                                                {{ action.replace('_', ' ').capitalize() }}
+                                                            </li>
+                                                            {% endfor %}
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-shield-x text-muted" style="font-size: 3rem;"></i>
+                    <p class="text-muted mt-3">Aucun rôle défini</p>
+                    <a href="{{ url_for('admin.create_role') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Créer le premier rôle
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Aide -->
+        <div class="card mt-4">
+            <div class="card-header bg-info bg-opacity-10">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> À propos des rôles</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Qu'est-ce qu'un rôle ?</h6>
+                        <p class="small">
+                            Un rôle définit un ensemble de permissions qui peuvent être attribuées à un ou plusieurs utilisateurs. 
+                            Cela permet de gérer facilement les accès aux différentes fonctionnalités de l'application.
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Modules et permissions</h6>
+                        <ul class="small">
+                            <li><strong>Stock:</strong> Gestion des articles en stock</li>
+                            <li><strong>Projets:</strong> Création et suivi des projets</li>
+                            <li><strong>Tâches:</strong> Gestion des tâches dans les projets</li>
+                            <li><strong>Personnel:</strong> Gestion des employés et groupes</li>
+                            <li><strong>Calendrier:</strong> Visualisation du planning</li>
+                            <li><strong>Dashboard:</strong> Accès au tableau de bord</li>
+                        </ul>
+                    </div>
+                </div>
+                <hr>
+                <div class="alert alert-warning mb-0">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Important:</strong> Le rôle "admin" possède tous les droits et ne peut pas être modifié ou supprimé. 
+                    Un rôle ne peut être supprimé que s'il n'est assigné à aucun utilisateur.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialiser les tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

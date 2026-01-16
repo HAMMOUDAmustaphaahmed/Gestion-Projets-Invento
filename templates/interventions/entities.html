@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">{{ title }}</h1>
+        <a href="{{ url_for('interventions.add_entity') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> Ajouter une entité
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Description</th>
+                            <th>Nombre d'interventions</th>
+                            <th>Créé le</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entity in entities %}
+                        <tr>
+                            <td><strong>{{ entity.name }}</strong></td>
+                            <td>{{ entity.description|truncate(100) if entity.description else '-' }}</td>
+                            <td>{{ entity.interventions.count() }}</td>
+                            <td>{{ entity.created_at.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('interventions.edit_entity', id=entity.id) }}" 
+                                       class="btn btn-outline-secondary" title="Modifier">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" 
+                                            title="Supprimer"
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#deleteModal{{ entity.id }}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Modal de confirmation de suppression -->
+                                <div class="modal fade" id="deleteModal{{ entity.id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Confirmer la suppression</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p>Êtes-vous sûr de vouloir supprimer l'entité <strong>{{ entity.name }}</strong> ?</p>
+                                                {% if entity.interventions.count() > 0 %}
+                                                <div class="alert alert-warning">
+                                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                                    Cette entité est utilisée dans {{ entity.interventions.count() }} intervention(s).
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                <form action="{{ url_for('interventions.delete_entity', id=entity.id) }}" method="POST">
+                                                    <button type="submit" class="btn btn-danger">Supprimer</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="bi bi-inbox fs-1"></i>
+                                    <p class="mt-2">Aucune entité d'intervention trouvée</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

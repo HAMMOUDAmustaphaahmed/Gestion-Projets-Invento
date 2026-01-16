@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Ajouter un équipement - {{ app_name }}{% endblock %}
+
+{% block page_title %}
+<i class="bi bi-plus-circle"></i> Ajouter un équipement
+{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('equipments.index') }}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Retour
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Nouvel équipement</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('equipments.add') }}">
+            {{ form.hidden_tag() }}
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="mb-3"><i class="bi bi-info-circle"></i> Informations de base</h5>
+                    
+                    <div class="mb-3">
+                        {{ form.reference.label(class="form-label") }}
+                        {{ form.reference(class="form-control" + (" is-invalid" if form.reference.errors else "")) }}
+                        {% for error in form.reference.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                        <small class="form-text text-muted">Référence unique de l'équipement</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.name.label(class="form-label") }}
+                        {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
+                        {% for error in form.name.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.category_id.label(class="form-label") }}
+                        {{ form.category_id(class="form-select" + (" is-invalid" if form.category_id.errors else "")) }}
+                        {% for error in form.category_id.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control", rows=3) }}
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <h5 class="mb-3"><i class="bi bi-tag"></i> Identification</h5>
+                    
+                    <div class="mb-3">
+                        {{ form.serial_number.label(class="form-label") }}
+                        {{ form.serial_number(class="form-control") }}
+                        <small class="form-text text-muted">Numéro de série unique</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.model.label(class="form-label") }}
+                        {{ form.model(class="form-control") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.brand.label(class="form-label") }}
+                        {{ form.brand(class="form-control") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.supplier_id.label(class="form-label") }}
+                        {{ form.supplier_id(class="form-select") }}
+                    </div>
+                </div>
+            </div>
+            
+            <hr class="my-4">
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="mb-3"><i class="bi bi-geo-alt"></i> Localisation et statut</h5>
+                    
+                    <div class="mb-3">
+                        {{ form.status.label(class="form-label") }}
+                        {{ form.status(class="form-select") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.location.label(class="form-label") }}
+                        {{ form.location(class="form-control") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.department.label(class="form-label") }}
+                        {{ form.department(class="form-control") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.responsible_person.label(class="form-label") }}
+                        {{ form.responsible_person(class="form-control") }}
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <h5 class="mb-3"><i class="bi bi-calendar"></i> Dates importantes</h5>
+                    
+                    <div class="mb-3">
+                        {{ form.purchase_date.label(class="form-label") }}
+                        {{ form.purchase_date(class="form-control datepicker") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.warranty_until.label(class="form-label") }}
+                        {{ form.warranty_until(class="form-control datepicker") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.last_maintenance.label(class="form-label") }}
+                        {{ form.last_maintenance(class="form-control datepicker") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.next_maintenance.label(class="form-label") }}
+                        {{ form.next_maintenance(class="form-control datepicker") }}
+                    </div>
+                </div>
+            </div>
+            
+            <hr class="my-4">
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="mb-3"><i class="bi bi-currency-euro"></i> Informations financières</h5>
+                    
+                    <div class="mb-3">
+                        {{ form.purchase_price.label(class="form-label") }}
+                        <div class="input-group">
+                            {{ form.purchase_price(class="form-control", step="0.01") }}
+                            <span class="input-group-text">€</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.current_value.label(class="form-label") }}
+                        <div class="input-group">
+                            {{ form.current_value(class="form-control", step="0.01") }}
+                            <span class="input-group-text">€</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <h5 class="mb-3"><i class="bi bi-box-seam"></i> Stock associé</h5>
+                    
+                    <div class="mb-3">
+                        {{ form.stock_items.label(class="form-label") }}
+                        {{ form.stock_items(class="form-select", multiple=True, size=5) }}
+                        <small class="form-text text-muted">Ctrl+clic pour sélectionner plusieurs éléments</small>
+                    </div>
+                </div>
+            </div>
+            
+            <hr class="my-4">
+            
+            <div class="row">
+                <div class="col-md-12">
+                    <h5 class="mb-3"><i class="bi bi-card-text"></i> Notes</h5>
+                    
+                    <div class="mb-3">
+                        {{ form.notes.label(class="form-label") }}
+                        {{ form.notes(class="form-control", rows=4) }}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{{ url_for('equipments.index') }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Annuler
+                </a>
+                {{ form.submit(class="btn btn-primary") }}
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.datepicker {
+    background-color: white;
+    cursor: pointer;
+}
+</style>
+
+<script>
+$(document).ready(function() {
+    // Initialisation des datepickers
+    $('.datepicker').datepicker({
+        format: 'yyyy-mm-dd',
+        autoclose: true,
+        todayHighlight: true,
+        language: 'fr'
+    });
+    
+    // Auto-calcul de la valeur actuelle
+    $('#purchase_price').on('change', function() {
+        if (!$('#current_value').val()) {
+            $('#current_value').val($(this).val());
+        }
+    });
+});
+</script>
+{% endblock %}

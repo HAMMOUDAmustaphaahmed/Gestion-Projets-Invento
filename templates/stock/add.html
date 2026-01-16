@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Ajouter un élément - Stock - {{ app_name }}{% endblock %}
+
+{% block page_title %}Ajouter un élément au stock{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('stock.index') }}" class="btn btn-secondary">
+    <i class="bi bi-arrow-left"></i> Retour
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Informations de l'élément</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('stock.add') }}" id="stockItemForm">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.reference.label(class="form-label") }}
+                            {{ form.reference(class="form-control" + (" is-invalid" if form.reference.errors else ""), 
+                                            placeholder="Ex: REF-001") }}
+                            <div class="form-text">La référence doit être unique.</div>
+                            {% for error in form.reference.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            {{ form.item_type.label(class="form-label") }}
+                            {{ form.item_type(class="form-select" + (" is-invalid" if form.item_type.errors else "")) }}
+                            {% for error in form.item_type.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.libelle.label(class="form-label") }}
+                        {{ form.libelle(class="form-control" + (" is-invalid" if form.libelle.errors else ""), 
+                                       placeholder="Description complète de l'élément") }}
+                        {% for error in form.libelle.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            {{ form.quantity.label(class="form-label") }}
+                            {{ form.quantity(class="form-control" + (" is-invalid" if form.quantity.errors else ""), 
+                                           type="number", min="0", step="1") }}
+                            {% for error in form.quantity.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            {{ form.min_quantity.label(class="form-label") }}
+                            {{ form.min_quantity(class="form-control" + (" is-invalid" if form.min_quantity.errors else ""), 
+                                               type="number", min="0", step="1") }}
+                            <div class="form-text">Seuil d'alerte.</div>
+                            {% for error in form.min_quantity.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            {{ form.price.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.price(class="form-control" + (" is-invalid" if form.price.errors else ""), 
+                                            type="number", min="0", step="0.01") }}
+                                <span class="input-group-text">€</span>
+                            </div>
+                            {% for error in form.price.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.supplier_id.label(class="form-label") }}
+                            {{ form.supplier_id(class="form-select" + (" is-invalid" if form.supplier_id.errors else "")) }}
+                            {% for error in form.supplier_id.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            {{ form.category_id.label(class="form-label") }}
+                            {{ form.category_id(class="form-select" + (" is-invalid" if form.category_id.errors else "")) }}
+                            {% for error in form.category_id.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.location.label(class="form-label") }}
+                        {{ form.location(class="form-control" + (" is-invalid" if form.location.errors else ""), 
+                                        placeholder="Ex: Entrepôt A, Rayon 3") }}
+                        {% for error in form.location.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.notes.label(class="form-label") }}
+                        {{ form.notes(class="form-control" + (" is-invalid" if form.notes.errors else ""), 
+                                     rows="3", placeholder="Notes supplémentaires...") }}
+                        {% for error in form.notes.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('stock.index') }}" class="btn btn-secondary">Annuler</a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Informations</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    <i class="bi bi-info-circle text-primary me-2"></i>
+                    Remplissez tous les champs obligatoires (*) pour ajouter un nouvel élément au stock.
+                </p>
+                <p class="card-text">
+                    <i class="bi bi-lightbulb text-warning me-2"></i>
+                    La <strong>quantité minimale</strong> déclenchera une alerte lorsque le stock sera en dessous.
+                </p>
+                <p class="card-text">
+                    <i class="bi bi-currency-euro text-success me-2"></i>
+                    La <strong>valeur totale</strong> sera calculée automatiquement (prix × quantité).
+                </p>
+                <div class="alert alert-info mt-3">
+                    <small>
+                        <i class="bi bi-clock-history me-2"></i>
+                        Après l'ajout, vous pourrez :
+                        <ul class="mb-0 mt-2">
+                            <li>Ajouter des attributs spécifiques</li>
+                            <li>Uploader des fichiers (PDF, images)</li>
+                            <li>Suivre les mouvements de stock</li>
+                        </ul>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

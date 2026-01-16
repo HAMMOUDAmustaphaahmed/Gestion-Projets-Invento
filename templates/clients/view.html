@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - {{ super() }}{% endblock %}
+
+{% block page_title %}
+    <i class="bi bi-person-badge"></i> {{ client.name }}
+    {% if not client.is_active %}
+    <span class="badge bg-secondary">Inactif</span>
+    {% endif %}
+{% endblock %}
+
+{% block page_actions %}
+    <div class="btn-group">
+        <a href="{{ url_for('clients.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Retour
+        </a>
+        {% if current_permissions.projects.update %}
+        <a href="{{ url_for('clients.edit', client_id=client.id) }}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Modifier
+        </a>
+        <button type="button" class="btn btn-outline-primary" onclick="toggleStatus({{ client.id }}, {{ client.is_active|lower }})">
+            <i class="bi bi-toggle-{{ 'off' if client.is_active else 'on' }}"></i>
+            {{ 'Désactiver' if client.is_active else 'Activer' }}
+        </button>
+        {% endif %}
+        {% if current_permissions.projects.delete %}
+        <button type="button" class="btn btn-danger" onclick="deleteClient({{ client.id }}, '{{ client.name }}')">
+            <i class="bi bi-trash"></i> Supprimer
+        </button>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Informations du client -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Informations Générales</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Nom:</strong><br>
+                        {{ client.name }}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Société:</strong><br>
+                        {{ client.company or '-' }}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Personne de contact:</strong><br>
+                        {{ client.contact_person or '-' }}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Email:</strong><br>
+                        {% if client.email %}
+                        <a href="mailto:{{ client.email }}">{{ client.email }}</a>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Téléphone:</strong><br>
+                        {% if client.phone %}
+                        <a href="tel:{{ client.phone }}">{{ client.phone }}</a>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Site web:</strong><br>
+                        {% if client.website %}
+                        <a href="{{ client.website }}" target="_blank">{{ client.website }}</a>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <strong>Adresse:</strong><br>
+                        {{ client.address or '-' }}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Ville:</strong><br>
+                        {{ client.city or '-' }}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Code postal:</strong><br>
+                        {{ client.postal_code or '-' }}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Pays:</strong><br>
+                        {{ client.country or '-' }}
+                    </div>
+                </div>
+
+                {% if client.siret %}
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <strong>SIRET:</strong><br>
+                        {{ client.siret }}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if client.notes %}
+                <div class="row">
+                    <div class="col-md-12">
+                        <strong>Notes:</strong><br>
+                        <div class="alert alert-light">
+                            {{ client.notes }}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <i class="bi bi-calendar-plus"></i> Créé le: {{ client.created_at|format_datetime }}
+                        </small>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <small class="text-muted">
+                            <i class="bi bi-calendar-check"></i> Modifié le: {{ client.updated_at|format_datetime }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Projets du client -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Projets</h5>
+                {% if current_permissions.projects.create %}
+                <a href="{{ url_for('projects.add') }}?client_id={{ client.id }}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-circle"></i> Nouveau projet
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if projects %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Date début</th>
+                                <th>Date fin</th>
+                                <th>Budget</th>
+                                <th>Coût actuel</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for project in projects %}
+                            <tr>
+                                <td>
+                                    <strong>{{ project.name }}</strong>
+                                </td>
+                                <td>{{ project.start_date|format_date }}</td>
+                                <td>{{ project.end_date|format_date }}</td>
+                                <td>{{ project.estimated_budget|format_currency }}</td>
+                                <td>{{ project.actual_cost|format_currency }}</td>
+                                <td>
+                                    {% if project.status == 'planning' %}
+                                    <span class="badge bg-info">Planification</span>
+                                    {% elif project.status == 'in_progress' %}
+                                    <span class="badge bg-primary">En cours</span>
+                                    {% elif project.status == 'completed' %}
+                                    <span class="badge bg-success">Terminé</span>
+                                    {% elif project.status == 'cancelled' %}
+                                    <span class="badge bg-danger">Annulé</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('projects.view', project_id=project.id) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info text-center">
+                    <i class="bi bi-info-circle"></i>
+                    Aucun projet pour ce client.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Statistiques</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Total projets:</span>
+                        <span class="badge bg-primary">{{ project_stats.total }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Planification:</span>
+                        <span class="badge bg-info">{{ project_stats.planning }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>En cours:</span>
+                        <span class="badge bg-primary">{{ project_stats.in_progress }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Terminés:</span>
+                        <span class="badge bg-success">{{ project_stats.completed }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Annulés:</span>
+                        <span class="badge bg-danger">{{ project_stats.cancelled }}</span>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>Budget total:</strong>
+                        <strong class="text-primary">{{ total_budget|format_currency }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <strong>Coût total:</strong>
+                        <strong class="text-danger">{{ total_cost|format_currency }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Statut</h5>
+            </div>
+            <div class="card-body text-center">
+                {% if client.is_active %}
+                <i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i>
+                <h4 class="text-success mt-2">Client Actif</h4>
+                {% else %}
+                <i class="bi bi-x-circle text-secondary" style="font-size: 3rem;"></i>
+                <h4 class="text-secondary mt-2">Client Inactif</h4>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleStatus(clientId, isActive) {
+    const action = isActive ? 'désactiver' : 'activer';
+    if (confirm(`Êtes-vous sûr de vouloir ${action} ce client ?`)) {
+        fetch(`/clients/${clientId}/toggle-status`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Erreur lors du changement de statut');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors du changement de statut');
+        });
+    }
+}
+
+function deleteClient(clientId, clientName) {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer le client "${clientName}" ?\n\nATTENTION: Cette action est irréversible!`)) {
+        fetch(`/clients/${clientId}/delete`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.href = '/clients';
+            } else {
+                return response.text().then(text => {
+                    alert('Erreur: ' + text);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors de la suppression du client');
+        });
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-people"></i> Gestion du Personnel</h2>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('personnel.export') }}" class="btn btn-outline-success">
+                    <i class="bi bi-download"></i> Exporter
+                </a>
+                {% if current_user.has_permission('personnel', 'create') %}
+                <a href="{{ url_for('personnel.add') }}" class="btn btn-primary">
+                    <i class="bi bi-person-plus"></i> Ajouter du personnel
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistiques rapides -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <i class="bi bi-people text-primary" style="font-size: 2rem;"></i>
+                <h3 class="mt-2 mb-0">{{ personnel_list.total }}</h3>
+                <p class="text-muted mb-0">Total Personnel</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+                <h3 class="mt-2 mb-0">{{ stats.active }}</h3>
+                <p class="text-muted mb-0">Actifs</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <i class="bi bi-building text-info" style="font-size: 2rem;"></i>
+                <h3 class="mt-2 mb-0">{{ departments|length }}</h3>
+                <p class="text-muted mb-0">Départements</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <i class="bi bi-people-fill text-warning" style="font-size: 2rem;"></i>
+                <h3 class="mt-2 mb-0">{{ stats.groups_count }}</h3>
+                <p class="text-muted mb-0">Groupes</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtres -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtres</h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('personnel.index') }}" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Recherche</label>
+                <input type="text" class="form-control" name="search" 
+                       placeholder="Nom, prénom ou matricule..." value="{{ search }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Département</label>
+                <select class="form-select" name="department">
+                    <option value="">Tous les départements</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept }}" {% if dept == selected_department %}selected{% endif %}>
+                        {{ dept.capitalize() }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Statut</label>
+                <select class="form-select" name="is_active">
+                    <option value="">Tous</option>
+                    <option value="true" {% if is_active == 'true' %}selected{% endif %}>Actifs</option>
+                    <option value="false" {% if is_active == 'false' %}selected{% endif %}>Inactifs</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Filtrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Liste du personnel -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Liste du Personnel</h5>
+        <span class="badge bg-secondary">{{ personnel_list.total }} résultat(s)</span>
+    </div>
+    <div class="card-body">
+        {% if personnel_list.items %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Matricule</th>
+                        <th>Nom complet</th>
+                        <th>Département</th>
+                        <th>Poste</th>
+                        <th>Contact</th>
+                        <th>Groupes</th>
+                        <th>Statut</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for person in personnel_list.items %}
+                    <tr>
+                        <td>
+                            <strong>{{ person.employee_id }}</strong>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('personnel.view', personnel_id=person.id) }}" 
+                               class="text-decoration-none">
+                                <i class="bi bi-person-circle"></i>
+                                {{ person.get_full_name() }}
+                            </a>
+                        </td>
+                        <td>
+                            {% if person.department %}
+                                <span class="badge bg-info bg-opacity-10 text-info">
+                                    {{ person.department.capitalize() }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ person.position or '-' }}</td>
+                        <td>
+                            {% if person.email %}
+                                <a href="mailto:{{ person.email }}" class="text-decoration-none">
+                                    <i class="bi bi-envelope"></i> {{ person.email }}
+                                </a>
+                            {% endif %}
+                            {% if person.phone %}
+                                <br><i class="bi bi-telephone"></i> {{ person.phone }}
+                            {% endif %}
+                            {% if not person.email and not person.phone %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if person.groups|length > 0 %}
+                                <span class="badge bg-warning">
+                                    {{ person.groups|length }} groupe(s)
+                                </span>
+                            {% else %}
+                                <span class="text-muted">Aucun</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if person.is_active %}
+                                <span class="badge bg-success">Actif</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactif</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group">
+                                <a href="{{ url_for('personnel.view', personnel_id=person.id) }}" 
+                                   class="btn btn-sm btn-outline-info"
+                                   data-bs-toggle="tooltip" title="Voir">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if current_user.has_permission('personnel', 'update') %}
+                                <a href="{{ url_for('personnel.edit', personnel_id=person.id) }}" 
+                                   class="btn btn-sm btn-outline-warning"
+                                   data-bs-toggle="tooltip" title="Modifier">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% endif %}
+                                {% if current_user.has_permission('personnel', 'delete') %}
+                                <form method="POST" 
+                                      action="{{ url_for('personnel.delete', personnel_id=person.id) }}" 
+                                      class="d-inline"
+                                      onsubmit="return confirm('Supprimer {{ person.get_full_name() }} ?')">
+                                    {{ csrf_token() }}
+                                    <button type="submit" 
+                                            class="btn btn-sm btn-outline-danger"
+                                            data-bs-toggle="tooltip" title="Supprimer">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if personnel_list.pages > 1 %}
+        <nav aria-label="Navigation pages">
+            <ul class="pagination justify-content-center mb-0 mt-3">
+                <li class="page-item {% if not personnel_list.has_prev %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('personnel.index', page=personnel_list.prev_num, search=search, department=selected_department, is_active=is_active) }}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                
+                {% for page_num in personnel_list.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                        <li class="page-item {% if page_num == personnel_list.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('personnel.index', page=page_num, search=search, department=selected_department, is_active=is_active) }}">
+                                {{ page_num }}
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                <li class="page-item {% if not personnel_list.has_next %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('personnel.index', page=personnel_list.next_num, search=search, department=selected_department, is_active=is_active) }}">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        {% endif %}
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-person-x text-muted" style="font-size: 3rem;"></i>
+            <p class="text-muted mt-3">Aucun membre du personnel trouvé</p>
+            {% if search or selected_department or is_active != 'true' %}
+            <a href="{{ url_for('personnel.index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-circle"></i> Réinitialiser les filtres
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Lien vers groupes -->
+<div class="mt-4 text-center">
+    <a href="{{ url_for('groups.index') }}" class="btn btn-outline-primary">
+        <i class="bi bi-people-fill"></i> Gérer les groupes
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialiser les tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

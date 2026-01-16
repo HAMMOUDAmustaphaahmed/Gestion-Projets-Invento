@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Équipements - Invento{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h2">Équipements</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Équipements</li>
+                </ol>
+            </nav>
+        </div>
+        {% if current_permissions.equipments.create %}
+        <div class="col-auto">
+            <a href="{{ url_for('equipments.add') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Ajouter un équipement
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Filtres -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" name="search" class="form-control" placeholder="Rechercher..." value="{{ search }}">
+                </div>
+                <div class="col-md-3">
+                    <select name="status" class="form-select">
+                        <option value="all" {% if status == 'all' %}selected{% endif %}>Tous les statuts</option>
+                        <option value="available" {% if status == 'available' %}selected{% endif %}>Disponible</option>
+                        <option value="in_use" {% if status == 'in_use' %}selected{% endif %}>En utilisation</option>
+                        <option value="maintenance" {% if status == 'maintenance' %}selected{% endif %}>En maintenance</option>
+                        <option value="out_of_service" {% if status == 'out_of_service' %}selected{% endif %}>Hors service</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="category" class="form-select">
+                        <option value="all" {% if category == 'all' %}selected{% endif %}>Toutes les catégories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if category == cat.id|string %}selected{% endif %}>{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Filtrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Liste des équipements -->
+    <div class="card">
+        <div class="card-body">
+            {% if equipments.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Référence</th>
+                            <th>Nom</th>
+                            <th>Modèle/Marque</th>
+                            <th>Statut</th>
+                            <th>Localisation</th>
+                            <th>Valeur</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for equipment in equipments.items %}
+                        <tr>
+                            <td><strong>{{ equipment.reference }}</strong></td>
+                            <td>{{ equipment.name }}</td>
+                            <td>{{ equipment.model }} / {{ equipment.brand }}</td>
+                            <td>
+                                <span class="badge bg-{% if equipment.status == 'available' %}success{% elif equipment.status == 'in_use' %}primary{% elif equipment.status == 'maintenance' %}warning{% else %}danger{% endif %}">
+                                    {{ equipment.status|replace('_', ' ')|title }}
+                                </span>
+                            </td>
+                            <td>{{ equipment.location }}</td>
+                            <td>{{ equipment.current_value|format_currency }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('equipments.view', equipment_id=equipment.id) }}"   class="btn btn-outline-primary" title="Voir">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if current_permissions.equipments.update %}
+                                    <a href="{{ url_for('equipments.edit', equipment_id=equipment.id) }}" class="btn btn-outline-secondary" title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if current_permissions.equipments.delete %}
+                                    <button class="btn btn-outline-danger" onclick="deleteEquipment({{ equipment.id }}, '{{ equipment.reference }}')"title="Supprimer">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    <script>
+                                        function deleteEquipment(equipmentId, reference) {
+    $('#confirmMessage').html(`
+        <p>Êtes-vous sûr de vouloir supprimer l'équipement <strong>${reference}</strong> ?</p>
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i> Cette action est irréversible. 
+            Tous les fichiers et historiques associés seront également supprimés.
+        </div>
+    `);
+    
+    $('#confirmAction').off('click').on('click', function() {
+        // Construire le formulaire avec le bon paramètre
+        const form = $('<form>', {
+            method: 'POST',
+            action: `/equipments/delete/${equipmentId}`
+        });
+        
+        // Ajouter le token CSRF
+        const csrfToken = $('meta[name="csrf-token"]').attr('content');
+        $('<input>', {
+            type: 'hidden',
+            name: 'csrf_token',
+            value: csrfToken
+        }).appendTo(form);
+        
+        form.appendTo('body').submit();
+    });
+    
+    $('#confirmModal').modal('show');
+}
+                                    </script>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Modal de suppression -->
+                                {% if current_permissions.equipments.delete %}
+                                <div class="modal fade" id="deleteModal{{ equipment.id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Confirmer la suppression</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                Êtes-vous sûr de vouloir supprimer l'équipement <strong>{{ equipment.reference }} - {{ equipment.name }}</strong> ?
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                <button class="btn btn-outline-danger" 
+        onclick="deleteEquipment({{ equipment.id }}, '{{ equipment.reference }}')"
+        title="Supprimer">Oui</button>
+        <script>
+            function deleteEquipment(equipmentId, reference) {
+    $('#confirmMessage').html(`
+        <p>Êtes-vous sûr de vouloir supprimer l'équipement <strong>${reference}</strong> ?</p>
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i> Cette action est irréversible. 
+            Tous les fichiers et historiques associés seront également supprimés.
+        </div>
+    `);
+    
+    $('#confirmAction').off('click').on('click', function() {
+        // Construire le formulaire avec le bon paramètre
+        const form = $('<form>', {
+            method: 'POST',
+            action: `/equipments/delete/${equipmentId}`
+        });
+        
+        // Ajouter le token CSRF
+        const csrfToken = $('meta[name="csrf-token"]').attr('content');
+        $('<input>', {
+            type: 'hidden',
+            name: 'csrf_token',
+            value: csrfToken
+        }).appendTo(form);
+        
+        form.appendTo('body').submit();
+    });
+    
+    $('#confirmModal').modal('show');
+}
+        </script>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if equipments.pages > 1 %}
+            <nav aria-label="Pagination">
+                <ul class="pagination justify-content-center">
+                    {% if equipments.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('equipments.index', page=equipments.prev_num, status=status, category=category, search=search) }}">Précédent</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in equipments.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                    <li class="page-item {% if page_num == equipments.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('equipments.index', page=page_num, status=status, category=category, search=search) }}">{{ page_num }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if equipments.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('equipments.index', page=equipments.next_num, status=status, category=category, search=search) }}">Suivant</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-tools fa-4x text-muted mb-3"></i>
+                <h4>Aucun équipement trouvé</h4>
+                <p class="text-muted">Commencez par ajouter votre premier équipement.</p>
+                {% if current_permissions.equipments.create %}
+                <a href="{{ url_for('equipments.add') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Ajouter un équipement
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

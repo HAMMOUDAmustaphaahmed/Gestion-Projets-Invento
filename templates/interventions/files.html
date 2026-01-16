@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Fichiers - Intervention #{{ intervention.intervention_number }}</h1>
+            <p class="text-muted mb-0">{{ intervention.client_name }}</p>
+        </div>
+        <a href="{{ url_for('interventions.view', id=intervention.id) }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Retour
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- Formulaire d'upload -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Ajouter un fichier</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.file_name.label(class="form-label") }}
+                            {{ form.file_name(class="form-control" + (" is-invalid" if form.file_name.errors else "")) }}
+                            {% for error in form.file_name.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                            <small class="form-text text-muted">Donnez un nom descriptif au fichier</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control") }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.file.label(class="form-label") }}
+                            {{ form.file(class="form-control" + (" is-invalid" if form.file.errors else "")) }}
+                            {% for error in form.file.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                            <small class="form-text text-muted">PDF, PNG, JPG, DOC, DOCX, XLS, XLSX (Max 16MB)</small>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-upload me-1"></i> Uploader
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Liste des fichiers -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Fichiers attachés ({{ files|length }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if files %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th style="width: 30%;">Nom</th>
+                                    <th style="width: 25%;">Description</th>
+                                    <th style="width: 10%;">Type</th>
+                                    <th style="width: 15%;">Uploadé par</th>
+                                    <th style="width: 10%;">Date</th>
+                                    <th style="width: 10%;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for file in files %}
+                                <tr>
+                                    <td>
+                                        <i class="bi bi-file-earmark-{{ 
+                                            'pdf' if file.file_type == 'pdf' 
+                                            else 'image' if file.file_type in ['jpg', 'jpeg', 'png'] 
+                                            else 'word' if file.file_type in ['doc', 'docx']
+                                            else 'excel' if file.file_type in ['xls', 'xlsx']
+                                            else 'text' 
+                                        }} fs-4 me-2"></i>
+                                        <strong>{{ file.file_name }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ file.original_filename }}</small>
+                                    </td>
+                                    <td>{{ file.description or '-' }}</td>
+                                    <td><span class="badge bg-secondary">{{ file.file_type.upper() }}</span></td>
+                                    <td>{{ file.uploader.get_full_name() if file.uploader else '-' }}</td>
+                                    <td>{{ file.uploaded_at.strftime('%d/%m/%Y') }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('interventions.view_file', file_id=file.id) }}" 
+                                               class="btn btn-outline-primary" 
+                                               target="_blank"
+                                               title="Ouvrir">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('interventions.download_file', file_id=file.id) }}" 
+                                               class="btn btn-outline-success" 
+                                               title="Télécharger">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                            <button type="button" 
+                                                    class="btn btn-outline-danger" 
+                                                    title="Supprimer"
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#deleteModal{{ file.id }}">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+
+                                        <!-- Modal de confirmation de suppression -->
+                                        <div class="modal fade" id="deleteModal{{ file.id }}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Confirmer la suppression</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p>Êtes-vous sûr de vouloir supprimer le fichier <strong>{{ file.file_name }}</strong> ?</p>
+                                                        <p class="text-danger">Cette action est irréversible.</p>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                        <form action="{{ url_for('interventions.delete_file', file_id=file.id) }}" method="POST">
+                                                            <button type="submit" class="btn btn-danger">Supprimer</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox fs-1 text-muted"></i>
+                        <p class="text-muted mt-3">Aucun fichier attaché</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

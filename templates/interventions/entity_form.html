@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">{{ title }}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ request.url }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
+                            {% for error in form.name.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                            <small class="form-text text-muted">Nom unique de l'entité d'intervention</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows=4) }}
+                            <small class="form-text text-muted">Description détaillée de l'entité d'intervention</small>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('interventions.entities') }}" class="btn btn-secondary">Annuler</a>
+                            <button type="submit" class="btn btn-primary">Enregistrer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            {% if intervention_entity and intervention_entity.interventions.count() > 0 %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Interventions utilisant cette entité</h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Cette entité est utilisée par {{ intervention_entity.interventions.count() }} intervention(s).
+                    </div>
+                    <div class="list-group">
+                        {% for intervention in intervention_entity.interventions.limit(5).all() %}
+                        <a href="{{ url_for('interventions.view', id=intervention.id) }}" class="list-group-item list-group-item-action">
+                            {{ intervention.intervention_number }} - {{ intervention.client_name }}
+                        </a>
+                        {% endfor %}
+                        {% if intervention_entity.interventions.count() > 5 %}
+                        <div class="list-group-item text-center">
+                            <small class="text-muted">... et {{ intervention_entity.interventions.count() - 5 }} autres</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

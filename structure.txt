@@ -1,0 +1,118 @@
+Invento/
+│
+├── app.py
+├── config.py
+├── requirements.txt
+├── .env
+├── .gitignore
+│
+├── instance/
+│   └── gmao.db
+│
+├── migrations/
+│
+├── static/
+│   ├── css/
+│   │   ├── main.css
+│   │   ├── dashboard.css
+│   │   └── calendar.css
+│   ├── js/
+│   │   ├── main.js
+│   │   ├── dashboard.js
+│   │   ├── calendar.js
+│   │   └── stock.js
+│   ├── img/
+│   └── uploads/
+│       ├── stock/
+│       └── projects/
+│
+├── templates/
+│   ├── base.html
+│   ├── index.html
+│   ├── help.html
+│   ├── settings.html
+│   ├── auth/
+│   │   ├── login.html
+│   │   └── register.html
+│   ├── admin/
+│   │   ├── dashboard.html
+│   │   ├── users.html
+│   │   ├── user_form.html
+│   │   ├── role_permissions.html
+│   │   └── roles.html
+│   ├── stock/
+│   │   ├── index.html
+│   │   ├── add.html
+│   │   ├── edit.html
+│   │   ├── view.html
+│   │   └── alerts.html
+│   ├── clients/
+│   │   ├── index.html
+│   │   ├── view.html
+│   │   └── form.html
+│   ├── personnel/
+│   │   ├── index.html
+│   │   ├── view.html
+│   │   └── form.html
+│   ├── groups/
+│   │   ├── index.html
+│   │   └── form.html
+│   ├── projects/
+│   │   ├── index.html
+│   │   ├── view.html
+│   │   ├── form.html
+│   │   └── task_form.html
+│   ├── dashboard/
+│   │   └── custom.html
+│   ├── calendar/
+│   │   └── index.html
+│   └── errors/
+│       ├── 404.html
+│       ├── 403.html
+│       └── 500.html
+│
+└── app/
+    ├── __init__.py
+    ├── models.py
+    ├── forms.py
+    ├── routes.py
+    ├── utils.py
+    ├── decorators.py
+    │
+    ├── auth/
+    │   ├── __init__.py
+    │   ├── routes.py
+    │   └── forms.py
+    │
+    ├── admin/
+    │   ├── __init__.py
+    │   ├── routes.py
+    │   └── forms.py
+    ├── clients/
+    │   ├── __init__.py
+    │   ├── routes.py
+    │   └── forms.py
+    │
+    ├── stock/
+    │   ├── __init__.py
+    │   ├── routes.py
+    │   └── forms.py
+    │
+    ├── personnel/
+    │   ├── __init__.py
+    │   ├── routes.py
+    │   └── forms.py
+    │
+    ├── projects/
+    │   ├── __init__.py
+    │   ├── routes.py
+    │   └── forms.py
+    │
+    ├── dashboard/
+    │   ├── __init__.py
+    │   └── routes.py
+    │   └── forms.py
+    │
+    └── calendar/
+        ├── __init__.py
+        └── routes.py
