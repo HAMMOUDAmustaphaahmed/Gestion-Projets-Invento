@@ -9,8 +9,11 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-change-in-production'
 
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'mysql+pymysql://root:@localhost:3306/invento_db'
+    SQLALCHEMY_DATABASE_URI = (
+        "mysql+pymysql://avnadmin:AVNS_gk-MK5-1fa-HjpSNe28@"
+        "mysql-tchs-ahmedmustaphahammouda.k.aivencloud.com:19936/defaultdb"
+    )
+
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
