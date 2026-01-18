@@ -13,5 +13,3 @@ Pillow==10.0.0
 python-dateutil==2.8.2
 email_validator
 Pillow
-chart.js==0.1.0
-fullcalendar==5.11.3
