@@ -360,11 +360,12 @@ def selectattr(sequence, attribute, test='equalto', value=True):
 
 def sum(sequence, attribute=None):
     """Calcule la somme d'un attribut sur une séquence"""
+    import builtins
     try:
         if attribute:
-            return sum(float(getattr(item, attribute, 0)) for item in sequence if getattr(item, attribute, 0) is not None)
+            return builtins.sum(float(getattr(item, attribute, 0)) for item in sequence if getattr(item, attribute, 0) is not None)
         else:
-            return sum(float(item) for item in sequence if item is not None)
+            return builtins.sum(float(item) for item in sequence if item is not None)
     except:
         return 0
 
