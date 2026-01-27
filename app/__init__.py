@@ -68,14 +68,8 @@ def create_app(config_name='default'):
     
     # Configuration des error handlers
     register_error_handlers(app)
-    register_filters(app)
     
     return app
-
-def register_filters(app):
-    """Enregistre les filtres additionnels"""
-    from app import utils
-    app.jinja_env.filters['format_currency'] = utils.format_currency
 
 def create_folders(app):
     """Crée les dossiers nécessaires s'ils n'existent pas"""
@@ -113,15 +107,23 @@ def register_blueprints(app):
 
 def register_template_filters(app):
     """Enregistre les filtres de template personnalisés"""
-    from app import utils
+    # Import direct des fonctions pour éviter les problèmes d'import circulaire
+    from app.utils import (
+        format_date, 
+        format_datetime, 
+        format_currency, 
+        nl2br, 
+        selectattr, 
+        sum
+    )
     
-    # Enregistrer tous les filtres depuis utils
-    app.jinja_env.filters['format_date'] = utils.format_date
-    app.jinja_env.filters['format_datetime'] = utils.format_datetime
-    app.jinja_env.filters['format_currency'] = utils.format_currency
-    app.jinja_env.filters['nl2br'] = utils.nl2br
-    app.jinja_env.filters['selectattr'] = utils.selectattr
-    app.jinja_env.filters['sum'] = utils.sum
+    # Enregistrer tous les filtres
+    app.jinja_env.filters['format_date'] = format_date
+    app.jinja_env.filters['format_datetime'] = format_datetime
+    app.jinja_env.filters['format_currency'] = format_currency
+    app.jinja_env.filters['nl2br'] = nl2br
+    app.jinja_env.filters['selectattr'] = selectattr
+    app.jinja_env.filters['sum'] = sum
 
 def register_context_processors(app):
     """Enregistre les context processors"""
