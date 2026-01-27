@@ -10,14 +10,6 @@ login_manager = LoginManager()
 migrate = Migrate()
 csrf = CSRFProtect()
 
-
-def format_currency(value, currency="TND"):
-    try:
-        value = float(value or 0)
-        return f"{value:,.3f} {currency}"
-    except (TypeError, ValueError):
-        return f"0.000 {currency}"
-
 from datetime import datetime
 from flask import current_app
 
@@ -30,11 +22,6 @@ def inject_today():
         'app_version': current_app.config.get('APP_VERSION', '1.0.0')
     }
 
-# Enregistrement des filtres
-from .utils import format_date, format_datetime, format_currency, nl2br, selectattr, sum
-
-
-
 def create_app(config_name='default'):
     """Factory function pour créer l'application Flask"""
     
@@ -46,7 +33,7 @@ def create_app(config_name='default'):
         template_folder=os.path.join(basedir, 'templates'),
         static_folder=os.path.join(basedir, 'static')
     )
-    app.jinja_env.filters['format_currency'] = format_currency
+    
     # Configuration
     from config import config
     app.config.from_object(config[config_name])
@@ -83,25 +70,12 @@ def create_app(config_name='default'):
     register_error_handlers(app)
     register_filters(app)
     
-    # Filtre nl2br
-    @app.template_filter('nl2br')
-    def nl2br_filter(value):
-        """Convertit les retours à la ligne en <br> tags"""
-        if value:
-            return value.replace('\n', '<br>')
-        return value
-    
     return app
 
-def format_currency(value):
-    try:
-        return f"{value:,.2f} DT".replace(",", " ")
-    except (TypeError, ValueError):
-        return "0.00 DT"
-
-
 def register_filters(app):
-    app.jinja_env.filters['format_currency'] = format_currency
+    """Enregistre les filtres additionnels"""
+    from app import utils
+    app.jinja_env.filters['format_currency'] = utils.format_currency
 
 def create_folders(app):
     """Crée les dossiers nécessaires s'ils n'existent pas"""
@@ -139,13 +113,15 @@ def register_blueprints(app):
 
 def register_template_filters(app):
     """Enregistre les filtres de template personnalisés"""
-    from app.utils import format_date, format_currency, format_datetime
-    app.jinja_env.filters['nl2br'] = nl2br
-    app.jinja_env.filters['selectattr'] = selectattr
-    app.jinja_env.filters['sum'] = sum
-    app.jinja_env.filters['format_date'] = format_date
-    app.jinja_env.filters['format_currency'] = format_currency
-    app.jinja_env.filters['format_datetime'] = format_datetime
+    from app import utils
+    
+    # Enregistrer tous les filtres depuis utils
+    app.jinja_env.filters['format_date'] = utils.format_date
+    app.jinja_env.filters['format_datetime'] = utils.format_datetime
+    app.jinja_env.filters['format_currency'] = utils.format_currency
+    app.jinja_env.filters['nl2br'] = utils.nl2br
+    app.jinja_env.filters['selectattr'] = utils.selectattr
+    app.jinja_env.filters['sum'] = utils.sum
 
 def register_context_processors(app):
     """Enregistre les context processors"""
