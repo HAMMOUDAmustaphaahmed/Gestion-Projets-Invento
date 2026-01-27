@@ -17,6 +17,7 @@ class ProjectForm(FlaskForm):
         Length(max=255, message='Le nom ne peut pas dépasser 255 caractères')
     ])
     description = TextAreaField('Description', validators=[Optional()])
+    client_id = SelectField('Client', coerce=int, validators=[Optional()])
     start_date = DateField('Date de début*', validators=[DataRequired()], format='%Y-%m-%d')
     end_date = DateField('Date de fin prévue*', validators=[DataRequired()], format='%Y-%m-%d')
     estimated_budget = FloatField('Budget estimé (€)', validators=[
