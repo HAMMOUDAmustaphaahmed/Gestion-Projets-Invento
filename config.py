@@ -6,25 +6,30 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-super-secret-key-change-this-12345-abcdef-ghijkl'
     
-    # Simplified Aiven connection
+    # Aiven MySQL connection
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or (
         "mysql+pymysql://avnadmin:AVNS_gk-MK5-1fa-HjpSNe28@"
         "mysql-tchs-ahmedmustaphahammouda.k.aivencloud.com:19932/defaultdb"
     )
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # Optimized for Aiven free tier with better resilience
     SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_recycle': 280,
-        'pool_pre_ping': True,
-        'pool_size': 3,
-        'max_overflow': 5,
+        'pool_recycle': 280,          # Recycle connections before MySQL times out
+        'pool_pre_ping': True,        # Test connections before using them
+        'pool_size': 2,               # Small pool for free tier
+        'max_overflow': 3,            # Limited overflow
+        'pool_timeout': 30,           # Wait up to 30s for a connection
         'connect_args': {
-            'connect_timeout': 30,
+            'connect_timeout': 20,    # 20 second connection timeout
+            'read_timeout': 20,       # 20 second read timeout
+            'write_timeout': 20,      # 20 second write timeout
             'charset': 'utf8mb4',
-            'use_unicode': True
+            'use_unicode': True,
+            'autocommit': True        # Auto-commit for better reliability
         }
     }
-    
     
     # Upload settings
     UPLOAD_FOLDER = os.path.join(basedir, 'static/uploads')
@@ -37,7 +42,7 @@ class Config:
     IMAGE_QUALITY = 85
     SEND_FILE_MAX_AGE_DEFAULT = 300
     
-    # Session Configuration - CRITICAL FOR CSRF
+    # Session Configuration
     SESSION_COOKIE_SECURE = False
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
