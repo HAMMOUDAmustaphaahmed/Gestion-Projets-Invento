@@ -79,33 +79,6 @@ class User(UserMixin, db.Model):
     # Relations
     role = db.relationship('Role', backref=db.backref('users_list', lazy='dynamic'))
     notifications = db.relationship('Notification', backref='user', lazy='dynamic')
-    def set_password(self, password):
-        """Définir le mot de passe (le hache automatiquement)"""
-        self.password_hash = generate_password_hash(password)
-    
-    def verify_password(self, password):
-        """Vérifier le mot de passe"""
-        return check_password_hash(self.password_hash, password)
-    def get_reset_password_token(self, expires_in=3600):
-        """
-        Génère un token sécurisé pour réinitialiser le mot de passe
-        expires_in: durée de validité du token en secondes (1 heure par défaut)
-        """
-        serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
-        return serializer.dumps({'reset_password':  self.id}, salt='password-reset-salt')
-
-    @staticmethod
-    def verify_reset_password_token(token, expires_in=3600):
-        """
-        Vérifie et décode le token de réinitialisation
-        Retourne l'utilisateur si le token est valide, None sinon
-        """
-        serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
-        try:
-            data = serializer. loads(token, salt='password-reset-salt', max_age=expires_in)
-            return User.query.get(data['reset_password'])
-        except:
-            return None
     
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -116,10 +89,41 @@ class User(UserMixin, db.Model):
     
     @password.setter
     def password(self, password):
+        """Set password using the property setter"""
+        self.password_hash = generate_password_hash(password)
+    
+    def set_password(self, password):
+        """Hash and set the password"""
         self.password_hash = generate_password_hash(password)
     
     def verify_password(self, password):
+        """Verify the password against the hash"""
         return check_password_hash(self.password_hash, password)
+    
+    def check_password(self, password):
+        """Alias for verify_password - for compatibility"""
+        return self.verify_password(password)
+    
+    def get_reset_password_token(self, expires_in=3600):
+        """
+        Génère un token sécurisé pour réinitialiser le mot de passe
+        expires_in: durée de validité du token en secondes (1 heure par défaut)
+        """
+        serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        return serializer.dumps({'reset_password': self.id}, salt='password-reset-salt')
+
+    @staticmethod
+    def verify_reset_password_token(token, expires_in=3600):
+        """
+        Vérifie et décode le token de réinitialisation
+        Retourne l'utilisateur si le token est valide, None sinon
+        """
+        serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        try:
+            data = serializer.loads(token, salt='password-reset-salt', max_age=expires_in)
+            return User.query.get(data['reset_password'])
+        except:
+            return None
     
     def get_permissions(self):
         """Retourne les permissions de l'utilisateur"""
