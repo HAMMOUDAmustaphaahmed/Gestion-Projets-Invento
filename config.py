@@ -4,10 +4,10 @@ from datetime import timedelta
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
-    # IMPORTANT: Change this to a random string for production
-    SECRET_KEY = 'your-secret-key-change-this-in-production-12345'
+    # ⚠️ IMPORTANT: Change this to a random string for production
+    SECRET_KEY = 'your-super-secret-key-change-this-12345-abcdef-ghijkl'
     
-    # Database - hardcoded for simplicity
+    # Database - hardcoded connection
     SQLALCHEMY_DATABASE_URI = (
         "mysql+pymysql://avnadmin:AVNS_gk-MK5-1fa-HjpSNe28@"
         "mysql-tchs-ahmedmustaphahammouda.k.aivencloud.com:19932/defaultdb"
@@ -24,7 +24,7 @@ class Config:
             'read_timeout': 30,
             'write_timeout': 30,
             'ssl': {
-                'ssl_mode': 'REQUIRED'  # CRITICAL: Must be REQUIRED for Aiven
+                'ssl_mode': 'REQUIRED'  # ✅ REQUIRED pour Aiven
             }
         }
     }
@@ -36,26 +36,29 @@ class Config:
     
     # Image optimization
     OPTIMIZE_IMAGES = True
-    MAX_IMAGE_DIMENSION = 2000
-    IMAGE_QUALITY = 85
+    MAX_IMAGE_DIMENSION = 2000  # pixels
+    IMAGE_QUALITY = 85  # qualité JPEG (0-100)
     SEND_FILE_MAX_AGE_DEFAULT = 300
     
     # Security settings
     SESSION_COOKIE_SECURE = False
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_NAME = 'session'
     PERMANENT_SESSION_LIFETIME = timedelta(hours=2)
     
     # CSRF Configuration
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = None
     WTF_CSRF_SSL_STRICT = False
+    WTF_CSRF_CHECK_DEFAULT = True
+    WTF_CSRF_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE']
     
     # Application settings
     ITEMS_PER_PAGE = 20
     DASHBOARD_CHARTS_LIMIT = 6
     
-    # Email configuration
+    # Email configuration - désactivé
     MAIL_SERVER = None
     MAIL_PORT = 587
     MAIL_USE_TLS = False
@@ -65,10 +68,10 @@ class Config:
     
     @staticmethod
     def init_app(app):
-        # Create upload folder if it doesn't exist
+        # Créer le dossier d'uploads s'il n'existe pas
         os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
         
-        # Create subfolders
+        # Créer les sous-dossiers
         for subfolder in ['projects', 'stock', 'personnel', 'equipment', 'interventions']:
             os.makedirs(
                 os.path.join(app.config['UPLOAD_FOLDER'], subfolder), 
@@ -78,10 +81,13 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_ECHO = False
+    SESSION_COOKIE_SECURE = False
+    WTF_CSRF_SSL_STRICT = False
 
 class ProductionConfig(Config):
     DEBUG = False
-    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = False  # Mettre True si vous activez HTTPS
+    WTF_CSRF_SSL_STRICT = False    # Mettre True si vous activez HTTPS
 
 class TestingConfig(Config):
     TESTING = True
