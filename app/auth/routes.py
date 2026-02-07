@@ -17,36 +17,58 @@ import json
 def login():
     """Gestion de la connexion utilisateur"""
     if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
+        return redirect(url_for('dashboard.index'))
     
     form = LoginForm()
+    
     if form.validate_on_submit():
-        # Nettoyer les entrées
-        username = sanitize_input(form. username.data)
+        username = sanitize_input(form.username.data)
         
-        # Rechercher l'utilisateur
-        user = User.query.filter_by(username=username).first()
-        
-        if user is None or not user.verify_password(form.password.data):
-            flash('Nom d\'utilisateur ou mot de passe incorrect.', 'danger')
-            return redirect(url_for('auth.login'))
-        
-        if not user.is_active:
-            flash('Votre compte est désactivé.  Contactez l\'administrateur.', 'warning')
-            return redirect(url_for('auth.login'))
-        
-        # Connexion réussie
-        login_user(user, remember=form.remember_me. data)
-        user.last_login = datetime.utcnow()
-        db.session.commit()
-        
-        flash('Connexion réussie! ', 'success')
-        
-        # Redirection vers la page demandée ou l'index
-        next_page = request.args.get('next')
-        if not next_page or not next_page. startswith('/'):
-            next_page = url_for('main.index')
-        return redirect(next_page)
+        # Retry logic for database connection issues
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                # Rechercher l'utilisateur
+                user = User.query.filter_by(username=username).first()
+                
+                if user is None or not user.verify_password(form.password.data):
+                    flash('Nom d\'utilisateur ou mot de passe incorrect.', 'danger')
+                    return redirect(url_for('auth.login'))
+                
+                if hasattr(user, 'is_active') and not user.is_active:
+                    flash('Votre compte est désactivé. Contactez l\'administrateur.', 'warning')
+                    return redirect(url_for('auth.login'))
+                
+                # Connexion réussie
+                login_user(user, remember=form.remember_me.data)
+                
+                # Mettre à jour la date de dernière connexion
+                if hasattr(user, 'last_login'):
+                    user.last_login = datetime.utcnow()
+                    db.session.commit()
+                
+                flash(f'Bienvenue {user.username}!', 'success')
+                
+                next_page = request.args.get('next')
+                if not next_page or not next_page.startswith('/'):
+                    next_page = url_for('dashboard.index')
+                return redirect(next_page)
+                
+            except Exception as e:
+                # If it's the last attempt, show error
+                if attempt == max_retries - 1:
+                    flash('Erreur de connexion à la base de données. Veuillez réessayer dans quelques instants.', 'danger')
+                    app.logger.error(f'Database error during login: {str(e)}')
+                    return redirect(url_for('auth.login'))
+                # Otherwise, wait and retry
+                time.sleep(1)
+                continue
+    
+    # Afficher les erreurs de validation
+    if form.errors:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{error}', 'danger')
     
     return render_template('auth/login.html', title='Connexion', form=form)
 
