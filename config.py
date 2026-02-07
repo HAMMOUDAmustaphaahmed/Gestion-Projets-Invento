@@ -14,12 +14,22 @@ class Config:
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_recycle': 280,
-        'pool_pre_ping': True,
-        'connect_args': {
-            'ssl': {'ssl_mode': 'PREFERRED'}  # Ajout pour Aiven
-        }
+    'pool_recycle': 280,
+    'pool_pre_ping': True,
+    'pool_size': 10,
+    'max_overflow': 20,
+    'connect_args': {
+        'connect_timeout': 60,  # Increased timeout
+        'read_timeout': 60,
+        'write_timeout': 60,
+        'ssl': {
+            'ssl_disabled': False,
+            'ssl_mode': 'REQUIRED'
+        },
+        'ssl_verify_cert': False,  # Add this
+        'ssl_verify_identity': False  # Add this
     }
+}
 
     # Upload settings
     UPLOAD_FOLDER = os.path.join(basedir, 'static/uploads')
