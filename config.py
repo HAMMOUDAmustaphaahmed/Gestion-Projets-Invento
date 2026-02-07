@@ -4,10 +4,9 @@ from datetime import timedelta
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
-    # Secret key - MUST be set in production via environment variable
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-super-secret-key-change-this-12345-abcdef-ghijkl'
     
-    # Database - Aiven MySQL with SSL
+    # Simplified Aiven connection
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or (
         "mysql+pymysql://avnadmin:AVNS_gk-MK5-1fa-HjpSNe28@"
         "mysql-tchs-ahmedmustaphahammouda.k.aivencloud.com:19932/defaultdb"
@@ -17,18 +16,15 @@ class Config:
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_recycle': 280,
         'pool_pre_ping': True,
-        'pool_size': 5,
-        'max_overflow': 10,
+        'pool_size': 3,
+        'max_overflow': 5,
         'connect_args': {
-            'connect_timeout': 60,
-            'read_timeout': 60,
-            'write_timeout': 60,
-            'ssl': {
-                'check_hostname': False,
-                'verify_mode': False
-            }
+            'connect_timeout': 30,
+            'charset': 'utf8mb4',
+            'use_unicode': True
         }
     }
+    
     
     # Upload settings
     UPLOAD_FOLDER = os.path.join(basedir, 'static/uploads')
