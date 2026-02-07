@@ -7,11 +7,10 @@ class Config:
     # Secret key - MUST be set in production via environment variable
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-super-secret-key-change-this-12345-abcdef-ghijkl'
     
-    # Database
+    # Database - Aiven MySQL with SSL
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or (
         "mysql+pymysql://avnadmin:AVNS_gk-MK5-1fa-HjpSNe28@"
         "mysql-tchs-ahmedmustaphahammouda.k.aivencloud.com:19932/defaultdb"
-        "?ssl_mode=REQUIRED"
     )
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -25,7 +24,8 @@ class Config:
             'read_timeout': 60,
             'write_timeout': 60,
             'ssl': {
-                'ssl_mode': 'REQUIRED'
+                'check_hostname': False,
+                'verify_mode': False
             }
         }
     }
@@ -109,5 +109,5 @@ config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
     'testing': TestingConfig,
-    'default': ProductionConfig  # For deployment
+    'default': ProductionConfig
 }
