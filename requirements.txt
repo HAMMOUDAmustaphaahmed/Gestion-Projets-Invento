@@ -12,3 +12,4 @@ email-validator==2.0.0
 Werkzeug==2.3.7
 Pillow>=10.2.0
 gunicorn
+cryptography==41.0.7
