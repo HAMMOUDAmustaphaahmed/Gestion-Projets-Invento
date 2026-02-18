@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">{{ title }}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('interventions.add') }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <!-- Informations de base -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.intervention_number.label(class="form-label") }}
+                                    {{ form.intervention_number(class="form-control" + (" is-invalid" if form.intervention_number.errors else "")) }}
+                                    {% for error in form.intervention_number.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.client_name.label(class="form-label") }}
+                                    {{ form.client_name(class="form-control" + (" is-invalid" if form.client_name.errors else "")) }}
+                                    {% for error in form.client_name.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.location.label(class="form-label") }}
+                                    {{ form.location(class="form-control") }}
+                                </div>
+                            </div>
+                            
+                            <!-- Sélections -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.type_id.label(class="form-label") }}
+                                    {{ form.type_id(class="form-select" + (" is-invalid" if form.type_id.errors else "")) }}
+                                    {% for error in form.type_id.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.class_id.label(class="form-label") }}
+                                    {{ form.class_id(class="form-select" + (" is-invalid" if form.class_id.errors else "")) }}
+                                    {% for error in form.class_id.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.entity_id.label(class="form-label") }}
+                                    {{ form.entity_id(class="form-select" + (" is-invalid" if form.entity_id.errors else "")) }}
+                                    {% for error in form.entity_id.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Dates -->
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    {{ form.client_contact_date.label(class="form-label") }}
+                                    {{ form.client_contact_date(class="form-control datepicker" + (" is-invalid" if form.client_contact_date.errors else "")) }}
+                                    {% for error in form.client_contact_date.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    {{ form.intervention_date.label(class="form-label") }}
+                                    {{ form.intervention_date(class="form-control datepicker" + (" is-invalid" if form.intervention_date.errors else "")) }}
+                                    {% for error in form.intervention_date.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    {{ form.planned_end_date.label(class="form-label") }}
+                                    {{ form.planned_end_date(class="form-control datepicker" + (" is-invalid" if form.planned_end_date.errors else "")) }}
+                                    {% for error in form.planned_end_date.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    {{ form.actual_end_date.label(class="form-label") }}
+                                    {{ form.actual_end_date(class="form-control datepicker") }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Statut et personnel -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.status.label(class="form-label") }}
+                                    {{ form.status(class="form-select") }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.personnel_ids.label(class="form-label") }}
+                                    {{ form.personnel_ids(class="form-control" + (" is-invalid" if form.personnel_ids.errors else "")) }}
+                                    <small class="form-text text-muted">Maintenez Ctrl pour sélectionner plusieurs personnes</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Descriptions -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    {{ form.anomaly_description.label(class="form-label") }}
+                                    {{ form.anomaly_description(class="form-control", rows=3) }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    {{ form.tasks_description.label(class="form-label") }}
+                                    {{ form.tasks_description(class="form-control", rows=3) }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Projet lié -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    {{ form.linked_to_project(class="form-check-input") }}
+                                    {{ form.linked_to_project.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                            
+                            <!-- Dans add.html, assurez-vous que le champ project_id est correct -->
+<div class="col-md-12 mt-3" id="projectField" style="display: none;">
+    <div class="mb-3">
+        {{ form.project_id.label(class="form-label") }}
+        {{ form.project_id(class="form-select select2") }}
+        {% if form.project_id.errors %}
+            <div class="invalid-feedback d-block">
+                {% for error in form.project_id.errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+                        </div>
+                        
+                        <!-- Justificatif -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    {{ form.justification_delay.label(class="form-label") }}
+                                    {{ form.justification_delay(class="form-control", rows=2) }}
+                                    <small class="form-text text-muted">À remplir si la date de fin prévue est dépassée</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Boutons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('interventions.index') }}" class="btn btn-secondary">Annuler</a>
+                            <button type="submit" class="btn btn-primary">Enregistrer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Initialiser les datepickers
+    $('.datepicker').each(function() {
+        new tempusDominus.TempusDominus(this, {
+            display: {
+                components: {
+                    decades: false,
+                    year: true,
+                    month: true,
+                    date: true,
+                    hours: false,
+                    minutes: false,
+                    seconds: false
+                },
+                buttons: {
+                    today: true,
+                    clear: false,
+                    close: true
+                },
+                theme: 'light'
+            },
+            localization: {
+                locale: 'fr',
+                format: 'yyyy-MM-dd'
+            }
+        });
+    });
+    
+    // Initialiser Select2 pour le personnel
+    $('select[multiple]').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        placeholder: 'Sélectionner...'
+    });
+    
+    // Initialiser Select2 pour le projet
+    $('.select2').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        placeholder: 'Sélectionner...'
+    });
+    
+    // Gérer l'affichage du champ projet
+    $('#linked_to_project').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#projectField').slideDown();
+        } else {
+            $('#projectField').slideUp();
+        }
+    });
+    
+    // Initialiser l'état du champ projet
+    if ($('#linked_to_project').is(':checked')) {
+        $('#projectField').show();
+    }
+});
+</script>
+{% endblock %}

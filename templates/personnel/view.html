@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-person-badge"></i> {{ personnel.get_full_name() }}
+            </h2>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('personnel.index') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Retour
+                </a>
+                {% if current_user.has_permission('personnel', 'update') %}
+                <a href="{{ url_for('personnel.edit', personnel_id=personnel.id) }}" class="btn btn-warning">
+                    <i class="bi bi-pencil"></i> Modifier
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Colonne gauche - Informations principales -->
+    <div class="col-lg-4">
+        <!-- Carte profil -->
+        <div class="card mb-3">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="bi bi-person-circle text-primary" style="font-size: 5rem;"></i>
+                </div>
+                <h4 class="mb-1">{{ personnel.get_full_name() }}</h4>
+                <p class="text-muted mb-3">{{ personnel.position or 'Non spécifié' }}</p>
+                
+                {% if personnel.is_active %}
+                    <span class="badge bg-success mb-3">Actif</span>
+                {% else %}
+                    <span class="badge bg-secondary mb-3">Inactif</span>
+                {% endif %}
+                
+                <div class="d-grid gap-2">
+                    {% if personnel.email %}
+                    <a href="mailto:{{ personnel.email }}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-envelope"></i> Envoyer un email
+                    </a>
+                    {% endif %}
+                    {% if personnel.phone %}
+                    <a href="tel:{{ personnel.phone }}" class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-telephone"></i> Appeler
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Informations de contact -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-person-vcard"></i> Informations de contact</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Matricule:</strong>
+                    <p class="mb-0">{{ personnel.employee_id }}</p>
+                </div>
+                
+                {% if personnel.email %}
+                <div class="mb-3">
+                    <strong>Email:</strong>
+                    <p class="mb-0">
+                        <a href="mailto:{{ personnel.email }}">{{ personnel.email }}</a>
+                    </p>
+                </div>
+                {% endif %}
+                
+                {% if personnel.phone %}
+                <div class="mb-3">
+                    <strong>Téléphone:</strong>
+                    <p class="mb-0">{{ personnel.phone }}</p>
+                </div>
+                {% endif %}
+                
+                {% if personnel.address %}
+                <div class="mb-3">
+                    <strong>Adresse:</strong>
+                    <p class="mb-0">{{ personnel.address }}</p>
+                    {% if personnel.city or personnel.country %}
+                    <p class="mb-0 text-muted">
+                        {{ personnel.city }}{% if personnel.city and personnel.country %}, {% endif %}{{ personnel.country }}
+                    </p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Contact d'urgence -->
+        {% if personnel.emergency_contact or personnel.emergency_phone %}
+        <div class="card mb-3">
+            <div class="card-header bg-danger bg-opacity-10">
+                <h6 class="mb-0 text-danger">
+                    <i class="bi bi-exclamation-triangle"></i> Contact d'urgence
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if personnel.emergency_contact %}
+                <div class="mb-2">
+                    <strong>Nom:</strong>
+                    <p class="mb-0">{{ personnel.emergency_contact }}</p>
+                </div>
+                {% endif %}
+                
+                {% if personnel.emergency_phone %}
+                <div>
+                    <strong>Téléphone:</strong>
+                    <p class="mb-0">
+                        <a href="tel:{{ personnel.emergency_phone }}">{{ personnel.emergency_phone }}</a>
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Colonne droite - Détails professionnels -->
+    <div class="col-lg-8">
+        <!-- Informations professionnelles -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-briefcase"></i> Informations professionnelles</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <strong>Département:</strong>
+                        <p class="mb-0">
+                            {% if personnel.department %}
+                                <span class="badge bg-info">{{ personnel.department.capitalize() }}</span>
+                            {% else %}
+                                <span class="text-muted">Non spécifié</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>Poste:</strong>
+                        <p class="mb-0">{{ personnel.position or 'Non spécifié' }}</p>
+                    </div>
+                    
+                    {% if personnel.hire_date %}
+                    <div class="col-md-6 mb-3">
+                        <strong>Date d'embauche:</strong>
+                        <p class="mb-0">{{ personnel.hire_date|format_date('%d/%m/%Y') }}</p>
+                        
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>Ancienneté:</strong>
+                        <p class="mb-0">
+                            {% set days = (today - personnel.hire_date).days %} 
+                            {% set years = days // 365 %}
+                            {% set months = (days % 365) // 30 %}
+                            {{ years }} an(s) et {{ months }} mois
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if personnel.notes %}
+                <hr>
+                <strong>Notes:</strong>
+                <p class="mb-0 mt-2">{{ personnel.notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Groupes -->
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-people-fill"></i> Groupes</h5>
+                    <span class="badge bg-warning">{{ personnel.groups|length }}</span>
+            </div>
+            <div class="card-body">
+                {% if personnel.groups|length > 0 %}
+                <div class="row">
+                    {% for group in personnel.groups %}
+                    <div class="col-md-6 mb-2">
+                        <div class="d-flex align-items-center p-2 border rounded">
+                            <i class="bi bi-people text-warning fs-4 me-2"></i>
+                            <div>
+                                <a href="{{ url_for('groups.view', group_id=group.id) }}" 
+                                   class="text-decoration-none fw-bold">
+                                    {{ group.name }}
+                                </a>
+                                <br>
+                                <small class="text-muted">{{ group.members|length }} membre(s)</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">Ce membre n'appartient à aucun groupe</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Tâches assignées -->
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-list-check"></i> Tâches assignées</h5>
+                <span class="badge bg-primary">{{ personnel.tasks|length }}</span>
+            </div>
+            <div class="card-body">
+                {% if assigned_tasks %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Tâche</th>
+                                <th>Projet</th>
+                                <th>Dates</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task in assigned_tasks %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('projects.view_task', task_id=task.id) }}">
+                                        {{ task.name }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('projects.view', project_id=task.project.id) }}">
+                                        {{ task.project.name }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <small>
+                                        {{task.start_date|format_date('%d/%m/%Y') }}<br>
+                                        
+                                        au {{task.end_date|format_date('%d/%m/%Y') }}
+                                    </small>
+                                </td>
+                                <td>
+                                    {% if task.status == 'pending' %}
+                                        <span class="badge bg-secondary">En attente</span>
+                                    {% elif task.status == 'in_progress' %}
+                                        <span class="badge bg-primary">En cours</span>
+                                    {% elif task.status == 'completed' %}
+                                        <span class="badge bg-success">Terminée</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Annulée</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if personnel.tasks|length > 10 %}
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('projects.index', personnel_id=personnel.id) }}" 
+                       class="btn btn-sm btn-outline-primary">
+                        Voir toutes les tâches ({{ personnel.tasks|length }})
+                    </a>
+                </div>
+                {% endif %}
+                {% else %}
+                <p class="text-muted mb-0">Aucune tâche assignée</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Statistiques -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Statistiques</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4 mb-3">
+                        <div class="border rounded p-3">
+                            <i class="bi bi-list-task text-primary fs-2"></i>
+                            <h4 class="mt-2 mb-1">{{ personnel.tasks|length }}</h4>
+                            <p class="text-muted small mb-0">Tâches totales</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="border rounded p-3">
+                            <i class="bi bi-check-circle text-success fs-2"></i>
+                            <h4 class="mt-2 mb-1">{{ personnel.tasks|selectattr("status", "equalto", "completed")|list|length }}</h4>
+                            <p class="text-muted small mb-0">Tâches terminées</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="border rounded p-3">
+                            <i class="bi bi-hourglass-split text-warning fs-2"></i>
+<h4 class="mt-2 mb-1">{{ personnel.tasks|selectattr("status", "equalto", "in_progress")|list|length }}</h4>
+                            <p class="text-muted small mb-0">Tâches en cours</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Animation au chargement
+    $('.card').addClass('fade-in');
+});
+</script>
+{% endblock %}

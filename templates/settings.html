@@ -1,0 +1,513 @@
+{% extends "base.html" %}
+
+{% block title %}Paramètres - {{ app_name }}{% endblock %}
+
+{% block page_title %}
+<i class="bi bi-gear"></i> Paramètres du système
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
+        <i class="bi bi-tools"></i> Actions
+    </button>
+    <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#backupModal">
+            <i class="bi bi-download"></i> Sauvegarder
+        </a></li>
+        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#importModal">
+            <i class="bi bi-upload"></i> Importer
+        </a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#maintenanceModal">
+            <i class="bi bi-wrench"></i> Mode maintenance
+        </a></li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="nav flex-column nav-pills" id="settingsTabs" role="tablist">
+            <button class="nav-link active" id="general-tab" data-bs-toggle="pill" data-bs-target="#general" type="button">
+                <i class="bi bi-sliders"></i> Général
+            </button>
+            <button class="nav-link" id="notifications-tab" data-bs-toggle="pill" data-bs-target="#notifications" type="button">
+                <i class="bi bi-bell"></i> Notifications
+            </button>
+            <button class="nav-link" id="security-tab" data-bs-toggle="pill" data-bs-target="#security" type="button">
+                <i class="bi bi-shield-check"></i> Sécurité
+            </button>
+            <button class="nav-link" id="appearance-tab" data-bs-toggle="pill" data-bs-target="#appearance" type="button">
+                <i class="bi bi-palette"></i> Apparence
+            </button>
+            <button class="nav-link" id="integrations-tab" data-bs-toggle="pill" data-bs-target="#integrations" type="button">
+                <i class="bi bi-plug"></i> Intégrations
+            </button>
+            <button class="nav-link" id="system-tab" data-bs-toggle="pill" data-bs-target="#system" type="button">
+                <i class="bi bi-cpu"></i> Système
+            </button>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <div class="tab-content" id="settingsTabsContent">
+            <!-- Général -->
+            <div class="tab-pane fade show active" id="general" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Paramètres généraux</h5>
+                    </div>
+                    <div class="card-body">
+                        <form>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nom de l'application</label>
+                                    <input type="text" class="form-control" value="{{ app_name }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Logo</label>
+                                    <input type="file" class="form-control" accept="image/*">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Devise</label>
+                                <select class="form-select">
+                                    <option value="EUR" selected>Euro (€)</option>
+                                    <option value="USD">Dollar US ($)</option>
+                                    <option value="GBP">Livre sterling (£)</option>
+                                    <option value="CHF">Franc suisse (CHF)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Format de date</label>
+                                    <select class="form-select">
+                                        <option value="fr" selected>JJ/MM/AAAA</option>
+                                        <option value="us">MM/DD/AAAA</option>
+                                        <option value="iso">AAAA-MM-DD</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Fuseau horaire</label>
+                                    <select class="form-select">
+                                        <option value="Europe/Paris" selected>Europe/Paris (UTC+1)</option>
+                                        <option value="UTC">UTC</option>
+                                        <option value="America/New_York">America/New_York</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Langue</label>
+                                <select class="form-select">
+                                    <option value="fr" selected>Français</option>
+                                    <option value="en">English</option>
+                                    <option value="es">Español</option>
+                                </select>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Enregistrer les modifications
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Notifications -->
+            <div class="tab-pane fade" id="notifications" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Paramètres de notifications</h5>
+                    </div>
+                    <div class="card-body">
+                        <form>
+                            <div class="mb-4">
+                                <h6>Types de notifications</h6>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="notifStock" checked>
+                                    <label class="form-check-label" for="notifStock">
+                                        Alertes de stock
+                                    </label>
+                                    <div class="form-text">Recevoir des alertes lorsque le stock est bas</div>
+                                </div>
+                                
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="notifTasks" checked>
+                                    <label class="form-check-label" for="notifTasks">
+                                        Assignations de tâches
+                                    </label>
+                                    <div class="form-text">Notifications lorsque vous êtes assigné à une tâche</div>
+                                </div>
+                                
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="notifProjects">
+                                    <label class="form-check-label" for="notifProjects">
+                                        Mises à jour de projet
+                                    </label>
+                                    <div class="form-text">Changements dans les projets que vous suivez</div>
+                                </div>
+                                
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="notifDaily">
+                                    <label class="form-check-label" for="notifDaily">
+                                        Résumé quotidien
+                                    </label>
+                                    <div class="form-text">Récapitulatif des activités de la journée</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <h6>Méthodes de notification</h6>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="methodInApp" checked>
+                                    <label class="form-check-label" for="methodInApp">
+                                        Dans l'application
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="methodEmail">
+                                    <label class="form-check-label" for="methodEmail">
+                                        Email
+                                    </label>
+                                    <div class="form-text">
+                                        <input type="email" class="form-control form-control-sm mt-1" placeholder="email@exemple.com">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <h6>Fréquence des notifications</h6>
+                                <select class="form-select">
+                                    <option value="immediate" selected>Immédiatement</option>
+                                    <option value="hourly">Toutes les heures</option>
+                                    <option value="daily">Quotidiennement</option>
+                                </select>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Enregistrer les préférences
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sécurité -->
+            <div class="tab-pane fade" id="security" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Paramètres de sécurité</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-4">
+                            <h6>Session</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Durée de la session (minutes)</label>
+                                <input type="number" class="form-control" value="120" min="5" max="1440">
+                                <div class="form-text">Durée d'inactivité avant déconnexion automatique</div>
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="sessionSingle" checked>
+                                <label class="form-check-label" for="sessionSingle">
+                                    Session unique par utilisateur
+                                </label>
+                                <div class="form-text">Empêche la connexion simultanée depuis plusieurs appareils</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h6>Mot de passe</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Longueur minimale</label>
+                                <input type="number" class="form-control" value="8" min="6" max="32">
+                            </div>
+                            
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="passwordUppercase" checked>
+                                <label class="form-check-label" for="passwordUppercase">
+                                    Requiert des majuscules
+                                </label>
+                            </div>
+                            
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="passwordNumbers" checked>
+                                <label class="form-check-label" for="passwordNumbers">
+                                    Requiert des chiffres
+                                </label>
+                            </div>
+                            
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="passwordSpecial">
+                                <label class="form-check-label" for="passwordSpecial">
+                                    Requiert des caractères spéciaux
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h6>Authentification à deux facteurs</h6>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" role="switch" id="2faSwitch">
+                                <label class="form-check-label" for="2faSwitch">Activer l'authentification à deux facteurs</label>
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <h6><i class="bi bi-info-circle"></i> Information</h6>
+                                <p class="mb-0">L'authentification à deux facteurs ajoute une couche de sécurité supplémentaire en demandant un code généré par une application mobile lors de la connexion.</p>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Appliquer les paramètres de sécurité
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Système -->
+            <div class="tab-pane fade" id="system" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Informations système</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Application</h6>
+                                <table class="table table-sm">
+                                    <tr>
+                                        <th>Nom</th>
+                                        <td>{{ app_name }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Version</th>
+                                        <td>{{ app_version }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Environnement</th>
+                                        <td>
+                                            {% if config.DEBUG %}
+                                            <span class="badge bg-warning">Développement</span>
+                                            {% else %}
+                                            <span class="badge bg-success">Production</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Serveur</th>
+                                        <td>{{ request.host }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h6>Base de données</h6>
+                                <table class="table table-sm">
+                                    <tr>
+                                        <th>Type</th>
+                                        <td>
+                                            {% if config.SQLALCHEMY_DATABASE_URI.startswith('sqlite') %}
+                                            SQLite
+                                            {% elif config.SQLALCHEMY_DATABASE_URI.startswith('mysql') %}
+                                            MySQL
+                                            {% else %}
+                                            Inconnu
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Statut</th>
+                                        <td><span class="badge bg-success">Connecté</span></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <h6>Statistiques</h6>
+                            <div class="row">
+                                <div class="col-md-3 col-6 mb-3">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <div class="text-primary fs-4" id="userCount">-</div>
+                                            <div class="text-muted small">Utilisateurs</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-6 mb-3">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <div class="text-success fs-4" id="stockCount">-</div>
+                                            <div class="text-muted small">Articles stock</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-6 mb-3">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <div class="text-warning fs-4" id="projectCount">-</div>
+                                            <div class="text-muted small">Projets</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-6 mb-3">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <div class="text-info fs-4" id="taskCount">-</div>
+                                            <div class="text-muted small">Tâches</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <h6>Maintenance</h6>
+                            <div class="d-grid gap-2 d-md-block">
+                                <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#cacheModal">
+                                    <i class="bi bi-arrow-clockwise"></i> Vider le cache
+                                </button>
+                                <button class="btn btn-outline-danger ms-2" data-bs-toggle="modal" data-bs-target="#logsModal">
+                                    <i class="bi bi-file-text"></i> Voir les logs
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<div class="modal fade" id="backupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Sauvegarde du système</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Cette action va créer une sauvegarde complète de la base de données et des fichiers uploadés.</p>
+                
+                <div class="mb-3">
+                    <label class="form-label">Type de sauvegarde</label>
+                    <select class="form-select">
+                        <option value="full">Complète (base de données + fichiers)</option>
+                        <option value="db">Base de données seulement</option>
+                        <option value="files">Fichiers uploadés seulement</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Compression</label>
+                    <select class="form-select">
+                        <option value="zip">ZIP (recommandé)</option>
+                        <option value="tar">TAR</option>
+                        <option value="none">Aucune</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary">
+                    <i class="bi bi-download"></i> Démarrer la sauvegarde
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="maintenanceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">Mode maintenance</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <h6><i class="bi bi-exclamation-triangle"></i> Attention</h6>
+                    <p class="mb-0">Le mode maintenance empêchera tous les utilisateurs (sauf les administrateurs) d'accéder à l'application.</p>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Message de maintenance</label>
+                    <textarea class="form-control" rows="3" placeholder="Le système est actuellement en maintenance..."></textarea>
+                </div>
+                
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="maintenanceSwitch">
+                    <label class="form-check-label" for="maintenanceSwitch">Activer le mode maintenance</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-warning">
+                    <i class="bi bi-wrench"></i> Appliquer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Load system statistics
+    function loadSystemStats() {
+        $.ajax({
+            url: '/api/dashboard-stats',
+            type: 'GET',
+            success: function(data) {
+                $('#userCount').text(data.total_users || 0);
+                $('#stockCount').text(data.total_stock_items || 0);
+                $('#projectCount').text(data.total_projects || 0);
+                $('#taskCount').text(data.total_tasks || 0);
+            }
+        });
+    }
+    
+    loadSystemStats();
+    
+    // Tab persistence
+    $('button[data-bs-toggle="pill"]').on('click', function() {
+        localStorage.setItem('settingsTab', $(this).attr('id'));
+    });
+    
+    var activeTab = localStorage.getItem('settingsTab');
+    if (activeTab) {
+        $('#' + activeTab).tab('show');
+    }
+});
+</script>
+
+<style>
+.nav-pills .nav-link {
+    color: #495057;
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
+    margin-bottom: 0.5rem;
+}
+
+.nav-pills .nav-link.active {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.nav-pills .nav-link:hover:not(.active) {
+    background-color: #f8f9fa;
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,207 @@
+
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête de page -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">{{ title }}</h1>
+            <p class="text-muted mb-0">
+                {% if group %}
+                Modification du groupe
+                {% else %}
+                Création d'un nouveau groupe
+                {% endif %}
+            </p>
+        </div>
+        <a href="{{ url_for('groups.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Retour à la liste
+        </a>
+    </div>
+
+    <!-- Formulaire -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" action="{{ request.url }}" id="groupForm">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Nom du groupe -->
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {% if form.name.errors %}
+                            {{ form.name(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.name.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            {{ form.name(class="form-control") }}
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Nom unique pour identifier le groupe
+                            </small>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {% if form.description.errors %}
+                            {{ form.description(class="form-control is-invalid", rows=3) }}
+                            <div class="invalid-feedback">
+                                {% for error in form.description.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            {{ form.description(class="form-control", rows=3) }}
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Description du groupe (objectif, responsabilités, etc.)
+                            </small>
+                        </div>
+                        
+                        <!-- Section Membres (si édition) -->
+                        {% if group %}
+                        <div class="mb-4">
+                            <label class="form-label">Membres du groupe</label>
+                            <div class="card border-dashed">
+                                <div class="card-body">
+                                    {% if group.members %}
+                                    <div class="list-group">
+                                        {% for member in group.members %}
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>{{ member.get_full_name() }}</strong>
+                                                <br>
+                                                <small class="text-muted">
+                                                    {{ member.employee_id }} • {{ member.department }} • {{ member.position }}
+                                                </small>
+                                            </div>
+                                            <a href="{{ url_for('personnel.view', personnel_id=member.id) }}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-person"></i> Voir
+                                            </a>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% else %}
+                                    <div class="text-center py-3">
+                                        <i class="bi bi-people display-4 text-muted"></i>
+                                        <p class="mt-2 text-muted">Aucun membre dans ce groupe</p>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="text-center mt-3">
+                                        <a href="{{ url_for('groups.manage_members', group_id=group.id) }}" 
+                                           class="btn btn-outline-primary">
+                                            <i class="bi bi-person-plus"></i> Gérer les membres
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Boutons d'action -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('groups.index') }}" class="btn btn-outline-secondary">
+                                Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i>
+                                {% if group %}Mettre à jour{% else %}Créer le groupe{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Informations supplémentaires -->
+            {% if group %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Actions supplémentaires</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <a href="{{ url_for('groups.manage_members', group_id=group.id) }}" 
+                               class="btn btn-outline-primary w-100">
+                                <i class="bi bi-person-plus"></i> Gérer les membres
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="{{ url_for('groups.group_tasks', group_id=group.id) }}" 
+                               class="btn btn-outline-info w-100">
+                                <i class="bi bi-list-task"></i> Tâches assignées
+                            </a>
+                        </div>
+                        {% if current_user.has_permission('personnel', 'delete') %}
+                        <div class="col-md-12">
+                            <button type="button" class="btn btn-outline-danger w-100 confirm-delete" 
+                                    data-url="{{ url_for('groups.delete', group_id=group.id) }}"
+                                    data-confirm="Êtes-vous sûr de vouloir supprimer le groupe '{{ group.name }}' ? Cette action est irréversible."
+                                    data-redirect="{{ url_for('groups.index') }}">
+                                <i class="bi bi-trash"></i> Supprimer le groupe
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Prévention de la double soumission
+    $('#groupForm').submit(function() {
+        $(this).find('button[type="submit"]').prop('disabled', true);
+    });
+    
+    // Gestion de la suppression
+    $('.confirm-delete').click(function(e) {
+        e.preventDefault();
+        var url = $(this).data('url');
+        var message = $(this).data('confirm');
+        var redirect = $(this).data('redirect');
+        
+        if (confirm(message)) {
+            $.ajax({
+                url: url,
+                type: 'POST',
+                data: {
+                    csrf_token: '{{ csrf_token() }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showToast('success', 'Groupe supprimé avec succès');
+                        if (redirect) {
+                            setTimeout(function() {
+                                window.location.href = redirect;
+                            }, 1500);
+                        }
+                    } else {
+                        showToast('error', response.message || 'Erreur lors de la suppression');
+                    }
+                },
+                error: function() {
+                    showToast('error', 'Erreur réseau');
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}
+[file content end]

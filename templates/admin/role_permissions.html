@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-key"></i> Permissions - {{ role.name }}
+            </h2>
+            <a href="{{ url_for('admin.roles') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Retour aux rôles
+            </a>
+        </div>
+    </div>
+</div>
+
+{% if role.name == 'admin' %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i>
+    <strong>Note:</strong> Le rôle "admin" possède automatiquement toutes les permissions. 
+    Les modifications ne sont pas autorisées pour ce rôle.
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-12">
+        <form method="POST" id="permissions-form">
+            {{ csrf_token() }}
+            <input type="hidden" name="permissions" id="permissions-input">
+            
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Configuration des permissions</h5>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-outline-success" id="select-all">
+                            <i class="bi bi-check-all"></i> Tout sélectionner
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" id="deselect-all">
+                            <i class="bi bi-x-lg"></i> Tout désélectionner
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for module in modules %}
+                        <div class="col-lg-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-primary bg-opacity-10">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">
+                                            <i class="bi bi-{{ 
+                                                'box-seam' if module.name == 'stock' else
+                                                'folder' if module.name == 'projects' else
+                                                'list-check' if module.name == 'tasks' else
+                                                'people' if module.name == 'personnel' else
+                                                'calendar' if module.name == 'calendar' else
+                                                'speedometer2'
+                                            }}"></i>
+                                            {{ module.label }}
+                                        </h6>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input module-toggle" 
+                                                   type="checkbox" 
+                                                   id="module-{{ module.name }}"
+                                                   data-module="{{ module.name }}"
+                                                   {% if role.name == 'admin' %}checked disabled{% endif %}>
+                                            <label class="form-check-label small" for="module-{{ module.name }}">
+                                                Tout
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="permissions-grid">
+                                        {% for action in module.actions %}
+                                        <div class="form-check">
+                                            <input class="form-check-input permission-checkbox" 
+                                                   type="checkbox" 
+                                                   name="permission_{{ module.name }}_{{ action.name }}"
+                                                   id="perm-{{ module.name }}-{{ action.name }}"
+                                                   data-module="{{ module.name }}"
+                                                   data-action="{{ action.name }}"
+                                                   {% if current_permissions.get(module.name, {}).get(action.name, False) or role.name == 'admin' %}checked{% endif %}
+                                                   {% if role.name == 'admin' %}disabled{% endif %}>
+                                            <label class="form-check-label" for="perm-{{ module.name }}-{{ action.name }}">
+                                                <i class="bi bi-{{ 
+                                                    'eye' if action.name == 'read' else
+                                                    'plus-circle' if action.name == 'create' else
+                                                    'pencil' if action.name == 'update' else
+                                                    'trash' if action.name == 'delete' else
+                                                    'gear'
+                                                }}"></i>
+                                                {{ action.label }}
+                                            </label>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span id="permissions-count" class="badge bg-info">0</span> permission(s) accordée(s)
+                        </div>
+                        <div class="d-flex gap-2">
+                            {% if role.name != 'admin' %}
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Enregistrer les permissions
+                            </button>
+                            {% endif %}
+                            <a href="{{ url_for('admin.roles') }}" class="btn btn-secondary">Annuler</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <!-- Résumé des permissions -->
+        <div class="card mt-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-list-check"></i> Résumé des permissions</h5>
+            </div>
+            <div class="card-body">
+                <div id="permissions-summary" class="row">
+                    <!-- Le résumé sera généré dynamiquement -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Description du rôle -->
+        {% if role.description %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Description du rôle</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ role.description }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Mettre à jour le compteur de permissions
+    function updatePermissionsCount() {
+        var count = $('.permission-checkbox:checked').length;
+        $('#permissions-count').text(count);
+        updatePermissionsSummary();
+    }
+
+    // Mettre à jour le résumé des permissions
+    function updatePermissionsSummary() {
+        var summary = {};
+        
+        $('.permission-checkbox:checked').each(function() {
+            var module = $(this).data('module');
+            var action = $(this).data('action');
+            
+            if (!summary[module]) {
+                summary[module] = [];
+            }
+            summary[module].push(action);
+        });
+        
+        var html = '';
+        for (var module in summary) {
+            var moduleLabel = $('[data-module="' + module + '"]').closest('.card').find('h6').text().trim();
+            html += '<div class="col-md-4 mb-3">';
+            html += '<h6>' + moduleLabel + '</h6>';
+            html += '<ul class="list-unstyled ms-3 small">';
+            summary[module].forEach(function(action) {
+                var icon = action === 'read' ? 'eye' : 
+                          action === 'create' ? 'plus-circle' : 
+                          action === 'update' ? 'pencil' : 
+                          action === 'delete' ? 'trash' : 'gear';
+                var label = action.replace('_', ' ').charAt(0).toUpperCase() + action.slice(1);
+                html += '<li><i class="bi bi-' + icon + ' text-success"></i> ' + label + '</li>';
+            });
+            html += '</ul>';
+            html += '</div>';
+        }
+        
+        if (html === '') {
+            html = '<div class="col-12"><p class="text-muted mb-0">Aucune permission accordée</p></div>';
+        }
+        
+        $('#permissions-summary').html(html);
+    }
+
+    // Toggle module entier
+    $('.module-toggle').on('change', function() {
+        var module = $(this).data('module');
+        var isChecked = $(this).is(':checked');
+        
+        $('[data-module="' + module + '"]').not('.module-toggle').prop('checked', isChecked);
+        updatePermissionsCount();
+    });
+
+    // Mettre à jour le toggle du module quand on change une permission
+    $('.permission-checkbox').on('change', function() {
+        var module = $(this).data('module');
+        var allChecked = $('[data-module="' + module + '"]').not('.module-toggle').length === 
+                         $('[data-module="' + module + '"]').not('.module-toggle').filter(':checked').length;
+        
+        $('#module-' + module).prop('checked', allChecked);
+        updatePermissionsCount();
+    });
+
+    // Tout sélectionner
+    $('#select-all').on('click', function() {
+        $('.permission-checkbox:not(:disabled)').prop('checked', true);
+        $('.module-toggle:not(:disabled)').prop('checked', true);
+        updatePermissionsCount();
+    });
+
+    // Tout désélectionner
+    $('#deselect-all').on('click', function() {
+        $('.permission-checkbox:not(:disabled)').prop('checked', false);
+        $('.module-toggle:not(:disabled)').prop('checked', false);
+        updatePermissionsCount();
+    });
+
+    // Soumettre le formulaire
+    $('#permissions-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        // Construire l'objet des permissions
+        var permissions = {};
+        
+        {% for module in modules %}
+        permissions['{{ module.name }}'] = {};
+        {% for action in module.actions %}
+        permissions['{{ module.name }}']['{{ action.name }}'] = 
+            $('#perm-{{ module.name }}-{{ action.name }}').is(':checked');
+        {% endfor %}
+        {% endfor %}
+        
+        // Mettre à jour le champ caché
+        $('#permissions-input').val(JSON.stringify(permissions));
+        
+        // Soumettre
+        $.ajax({
+            url: '{{ url_for("admin.role_permissions", role_id=role.id) }}',
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function(response) {
+                if (response.success) {
+                    showToast('success', 'Permissions mises à jour avec succès');
+                    setTimeout(function() {
+                        window.location.href = '{{ url_for("admin.roles") }}';
+                    }, 1500);
+                } else {
+                    showToast('error', response.error || 'Erreur lors de la mise à jour');
+                }
+            },
+            error: function() {
+                showToast('error', 'Erreur réseau');
+            }
+        });
+    });
+
+    // Initialiser le compteur
+    updatePermissionsCount();
+});
+</script>
+
+<style>
+.permissions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.5rem;
+}
+
+.permissions-grid .form-check {
+    margin-bottom: 0;
+}
+
+.card {
+    transition: all 0.2s;
+}
+
+.card:hover {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+</style>
+{% endblock %}

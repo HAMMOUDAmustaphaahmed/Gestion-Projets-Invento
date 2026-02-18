@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">{{ title }}</h1>
+        <a href="{{ url_for('interventions.add') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> Ajouter une intervention
+        </a>
+    </div>
+
+    <!-- Recherche -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="searchInput" 
+                               placeholder="Rechercher par N°, client ou emplacement..." 
+                               value="{{ search }}">
+                        <button class="btn btn-outline-primary" type="button" id="searchButton">
+                            <i class="bi bi-search"></i>
+                        </button>
+                        {% if search %}
+                        <a href="{{ url_for('interventions.index') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" id="perPageSelect">
+                        <option value="10" {% if interventions.per_page == 10 %}selected{% endif %}>10 par page</option>
+                        <option value="20" {% if interventions.per_page == 20 %}selected{% endif %}>20 par page</option>
+                        <option value="50" {% if interventions.per_page == 50 %}selected{% endif %}>50 par page</option>
+                        <option value="100" {% if interventions.per_page == 100 %}selected{% endif %}>100 par page</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tableau des interventions -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>
+                                <a href="{{ url_for('interventions.index', sort_by='intervention_number', sort_order='asc' if sort_by != 'intervention_number' or sort_order == 'desc' else 'desc', search=search) }}" 
+                                   class="text-decoration-none text-dark">
+                                    N° intervention
+                                    {% if sort_by == 'intervention_number' %}
+                                        <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="{{ url_for('interventions.index', sort_by='client_name', sort_order='asc' if sort_by != 'client_name' or sort_order == 'desc' else 'desc', search=search) }}" 
+                                   class="text-decoration-none text-dark">
+                                    Client
+                                    {% if sort_by == 'client_name' %}
+                                        <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th>Type</th>
+                            <th>Classe</th>
+                            <th>Entité</th>
+                            <th>
+                                <a href="{{ url_for('interventions.index', sort_by='intervention_date', sort_order='asc' if sort_by != 'intervention_date' or sort_order == 'desc' else 'desc', search=search) }}" 
+                                   class="text-decoration-none text-dark">
+                                    Date intervention
+                                    {% if sort_by == 'intervention_date' %}
+                                        <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="{{ url_for('interventions.index', sort_by='status', sort_order='asc' if sort_by != 'status' or sort_order == 'desc' else 'desc', search=search) }}" 
+                                   class="text-decoration-none text-dark">
+                                    État
+                                    {% if sort_by == 'status' %}
+                                        <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th>Fichiers</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for intervention in interventions.items %}
+                        <tr>
+                            <td><strong>{{ intervention.intervention_number }}</strong></td>
+                            <td>{{ intervention.client_name }}</td>
+                            <td>{{ intervention.type.name if intervention.type else '' }}</td>
+                            <td>{{ intervention.intervention_class.name if intervention.intervention_class else '' }}</td>
+                            <td>{{ intervention.entity.name if intervention.entity else '' }}</td>
+                            <td>{{ intervention.intervention_date.strftime('%d/%m/%Y') if intervention.intervention_date else '' }}</td>
+                            <td>
+                                <span class="badge bg-{{ 
+                                    'info' if intervention.status == 'planned' 
+                                    else 'warning' if intervention.status == 'in_progress' 
+                                    else 'success' if intervention.status == 'completed' 
+                                    else 'danger' 
+                                }}">
+                                    {{ intervention.get_status_label() }}
+                                </span>
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-outline-info" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#filesModal{{ intervention.id }}">
+                                    <i class="bi bi-paperclip"></i> 
+                                    <span class="badge bg-secondary">{{ intervention.files.count() }}</span>
+                                </button>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('interventions.view', id=intervention.id) }}" 
+                                       class="btn btn-outline-primary" title="Voir">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('interventions.edit', id=intervention.id) }}" 
+                                       class="btn btn-outline-secondary" title="Modifier">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" 
+                                            title="Supprimer"
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#deleteModal{{ intervention.id }}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="bi bi-inbox fs-1"></i>
+                                    <p class="mt-2">Aucune intervention trouvée</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if interventions.pages > 1 %}
+            <nav aria-label="Navigation des interventions">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item {% if not interventions.has_prev %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('interventions.index', page=interventions.prev_num, per_page=interventions.per_page, search=search, sort_by=sort_by, sort_order=sort_order) }}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    
+                    {% for page_num in interventions.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+                        {% if page_num %}
+                            <li class="page-item {% if page_num == interventions.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('interventions.index', page=page_num, per_page=interventions.per_page, search=search, sort_by=sort_by, sort_order=sort_order) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <li class="page-item {% if not interventions.has_next %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('interventions.index', page=interventions.next_num, per_page=interventions.per_page, search=search, sort_by=sort_by, sort_order=sort_order) }}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modals au niveau racine (hors du tableau) -->
+<div class="modals-container">
+    {% for intervention in interventions.items %}
+    <!-- Modal des fichiers -->
+    <div class="modal fade" id="filesModal{{ intervention.id }}" tabindex="-1" aria-labelledby="filesModalLabel{{ intervention.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="filesModalLabel{{ intervention.id }}">Fichiers - Intervention #{{ intervention.intervention_number }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    {% if intervention.files.count() > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Description</th>
+                                    <th>Type</th>
+                                    <th>Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for file in intervention.files.all() %}
+                                <tr>
+                                    <td>
+                                        <i class="bi bi-file-earmark-{{ 
+                                            'pdf' if file.file_type == 'pdf' 
+                                            else 'image' if file.file_type in ['jpg', 'jpeg', 'png'] 
+                                            else 'word' if file.file_type in ['doc', 'docx']
+                                            else 'excel' if file.file_type in ['xls', 'xlsx']
+                                            else 'text' 
+                                        }}"></i>
+                                        <strong>{{ file.file_name or file.original_filename }}</strong>
+                                    </td>
+                                    <td>{{ file.description or '-' }}</td>
+                                    <td><span class="badge bg-secondary">{{ (file.file_type or '').upper() }}</span></td>
+                                    <td>{{ file.uploaded_at.strftime('%d/%m/%Y') if file.uploaded_at else '' }}</td>
+                                    <td>
+                                        <a href="{{ url_for('interventions.download_file', file_id=file.id) }}" 
+                                           class="btn btn-sm btn-outline-primary" 
+                                           title="Télécharger">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted my-4">
+                        <i class="bi bi-folder-x fs-1"></i><br>
+                        Aucun fichier attaché
+                    </p>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <a href="{{ url_for('interventions.manage_files', id=intervention.id) }}" 
+                       class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Gérer les fichiers
+                    </a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmation de suppression -->
+    <div class="modal fade" id="deleteModal{{ intervention.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ intervention.id }}" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel{{ intervention.id }}">Confirmer la suppression</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Êtes-vous sûr de vouloir supprimer l'intervention <strong>{{ intervention.intervention_number }}</strong> ?</p>
+                    <p class="text-danger">Cette action est irréversible.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <form action="{{ url_for('interventions.delete', id=intervention.id) }}" method="POST">
+                        <button type="submit" class="btn btn-danger">Supprimer</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+$(document).ready(function() {
+    // Recherche avec Enter
+    $('#searchInput').on('keypress', function(e) {
+        if (e.which === 13) {
+            performSearch();
+        }
+    });
+    
+    // Recherche avec bouton
+    $('#searchButton').on('click', function() {
+        performSearch();
+    });
+    
+    // Changement du nombre d'éléments par page
+    $('#perPageSelect').on('change', function() {
+        const perPage = $(this).val();
+        const search = $('#searchInput').val();
+        window.location.href = `{{ url_for('interventions.index') }}?per_page=${perPage}&search=${encodeURIComponent(search)}`;
+    });
+    
+    function performSearch() {
+        const search = $('#searchInput').val();
+        window.location.href = `{{ url_for('interventions.index') }}?search=${encodeURIComponent(search)}`;
+    }
+    
+    // Prévenir les clics dans les modals de se propager
+    $('.modal').on('click', function(e) {
+        if ($(e.target).hasClass('modal')) {
+            e.stopPropagation();
+        }
+    });
+});
+</script>
+
+<style>
+/* Assurer que les modals s'affichent correctement */
+.modal-backdrop {
+    z-index: 1040;
+}
+
+.modal {
+    z-index: 1050;
+}
+
+/* Prévenir les problèmes de superposition */
+.modals-container {
+    position: relative;
+    z-index: 1060;
+}
+
+/* Assurer que les modals ne sont pas affectés par le tableau */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+</style>
+{% endblock %}

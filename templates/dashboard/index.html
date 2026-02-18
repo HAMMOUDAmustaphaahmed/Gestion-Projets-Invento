@@ -1,0 +1,522 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de Bord - {{ app_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block page_title %}
+<div class="page-header-modern">
+    <h1 class="page-title-modern">
+        <i class="bi bi-speedometer2 gradient-icon"></i>
+        Tableau de Bord
+    </h1>
+    <p class="page-subtitle">Vue d'ensemble de votre système de gestion</p>
+</div>
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{{ url_for('dashboard.custom') }}" class="btn btn-modern btn-primary">
+        <i class="bi bi-sliders"></i> Personnaliser
+    </a>
+    <button type="button" class="btn btn-modern btn-outline-secondary" id="refreshDashboard">
+        <i class="bi bi-arrow-clockwise"></i> Actualiser
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Statistiques Principales avec Design Moderne -->
+<div class="stats-grid mb-4">
+    <!-- Stock -->
+    <div class="stat-card stat-card-gradient-1">
+        <div class="stat-card-icon">
+            <i class="bi bi-box-seam"></i>
+        </div>
+        <div class="stat-card-content">
+            <div class="stat-value">{{ stats.total_stock_items }}</div>
+            <div class="stat-label">Éléments en stock</div>
+            {% if stats.stock_alerts > 0 %}
+            <div class="stat-badge badge-danger mt-2">
+                <i class="bi bi-exclamation-triangle"></i> {{ stats.stock_alerts }} alerte(s)
+            </div>
+            {% endif %}
+        </div>
+        <div class="stat-trend">
+            <span class="trend-value">{{ stats.stock_categories }}</span>
+            <span class="trend-label">catégories</span>
+        </div>
+    </div>
+
+    <!-- Projets -->
+    <div class="stat-card stat-card-gradient-2">
+        <div class="stat-card-icon">
+            <i class="bi bi-kanban"></i>
+        </div>
+        <div class="stat-card-content">
+            <div class="stat-value">{{ stats.total_projects }}</div>
+            <div class="stat-label">Projets</div>
+            <div class="stat-progress mt-2">
+                <div class="progress-modern">
+                    <div class="progress-bar-modern" style="width: {{ stats.project_completion_rate }}%"></div>
+                </div>
+                <span class="progress-text">{{ stats.project_completion_rate }}% complétés</span>
+            </div>
+        </div>
+        <div class="stat-trend">
+            <span class="trend-value">{{ stats.active_projects }}</span>
+            <span class="trend-label">actifs</span>
+        </div>
+    </div>
+
+    <!-- Tâches -->
+    <div class="stat-card stat-card-gradient-3">
+        <div class="stat-card-icon">
+            <i class="bi bi-list-task"></i>
+        </div>
+        <div class="stat-card-content">
+            <div class="stat-value">{{ stats.total_tasks }}</div>
+            <div class="stat-label">Tâches</div>
+            <div class="stat-mini-grid mt-2">
+                <div class="stat-mini-item">
+                    <span class="mini-value">{{ stats.pending_tasks }}</span>
+                    <span class="mini-label">En attente</span>
+                </div>
+                <div class="stat-mini-item">
+                    <span class="mini-value">{{ stats.in_progress_tasks }}</span>
+                    <span class="mini-label">En cours</span>
+                </div>
+            </div>
+        </div>
+        <div class="stat-trend stat-trend-danger">
+            <span class="trend-value">{{ stats.overdue_tasks }}</span>
+            <span class="trend-label">en retard</span>
+        </div>
+    </div>
+
+    <!-- Personnel -->
+    <div class="stat-card stat-card-gradient-4">
+        <div class="stat-card-icon">
+            <i class="bi bi-people"></i>
+        </div>
+        <div class="stat-card-content">
+            <div class="stat-value">{{ stats.total_personnel }}</div>
+            <div class="stat-label">Personnel actif</div>
+            <div class="stat-mini-grid mt-2">
+                <div class="stat-mini-item">
+                    <span class="mini-value">{{ stats.total_groups }}</span>
+                    <span class="mini-label">Groupes</span>
+                </div>
+                <div class="stat-mini-item">
+                    <span class="mini-value">{{ stats.total_users }}</span>
+                    <span class="mini-label">Utilisateurs</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget & Coûts -->
+    <div class="stat-card stat-card-gradient-5">
+        <div class="stat-card-icon">
+            <i class="bi bi-currency-dollar"></i>
+        </div>
+        <div class="stat-card-content">
+            <div class="stat-value">{{ "%.2f"|format(stats.total_project_budget) }}</div>
+            <div class="stat-label">Budget Total (TND)</div>
+            <div class="stat-mini-grid mt-2">
+                <div class="stat-mini-item">
+                    <span class="mini-value">{{ "%.2f"|format(stats.total_project_cost) }}</span>
+                    <span class="mini-label">Dépensé</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Valeur Stock -->
+    <div class="stat-card stat-card-gradient-6">
+        <div class="stat-card-icon">
+            <i class="bi bi-cash-stack"></i>
+        </div>
+        <div class="stat-card-content">
+            <div class="stat-value">{{ "%.2f"|format(stats.total_stock_value) }}</div>
+            <div class="stat-label">Valeur du Stock (TND)</div>
+        </div>
+    </div>
+
+    <!-- Fournisseurs -->
+    <div class="stat-card stat-card-gradient-7">
+        <div class="stat-card-icon">
+            <i class="bi bi-truck"></i>
+        </div>
+        <div class="stat-card-content">
+            <div class="stat-value">{{ stats.total_suppliers }}</div>
+            <div class="stat-label">Fournisseurs</div>
+        </div>
+    </div>
+
+    <!-- Clients -->
+    <div class="stat-card stat-card-gradient-8">
+        <div class="stat-card-icon">
+            <i class="bi bi-briefcase"></i>
+        </div>
+        <div class="stat-card-content">
+            <div class="stat-value">{{ stats.total_clients }}</div>
+            <div class="stat-label">Clients actifs</div>
+        </div>
+    </div>
+</div>
+
+<!-- Graphiques personnalisés -->
+<div class="row mb-4">
+    {% if charts %}
+        {% for chart in charts %}
+        <div class="col-lg-6 mb-4">
+            <div class="card card-modern">
+                <div class="card-header-modern">
+                    <h5 class="card-title-modern">
+                        <i class="bi bi-graph-up"></i>
+                        {{ chart.title }}
+                    </h5>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-icon dropdown-toggle" type="button" 
+                                data-bs-toggle="dropdown">
+                            <i class="bi bi-three-dots-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('dashboard.edit_chart', chart_id=chart.id) }}">
+                                    <i class="bi bi-pencil me-2"></i>Modifier
+                                </a>
+                            </li>
+                            <li>
+                                <button class="dropdown-item toggle-chart" data-id="{{ chart.id }}">
+                                    <i class="bi bi-eye{% if not chart.is_active %}-slash{% endif %} me-2"></i>
+                                    {% if chart.is_active %}Masquer{% else %}Afficher{% endif %}
+                                </button>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button class="dropdown-item text-danger delete-chart" data-id="{{ chart.id }}">
+                                    <i class="bi bi-trash me-2"></i>Supprimer
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body-modern">
+                    <div class="chart-container-modern">
+                        <canvas id="chart-{{ chart.id }}"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+    <div class="col-12">
+        <div class="card card-modern">
+            <div class="card-body-modern text-center py-5">
+                <div class="empty-state">
+                    <i class="bi bi-pie-chart empty-state-icon"></i>
+                    <h4 class="empty-state-title">Aucun graphique configuré</h4>
+                    <p class="empty-state-text">
+                        Personnalisez votre tableau de bord en ajoutant des graphiques.
+                    </p>
+                    <a href="{{ url_for('dashboard.custom') }}" class="btn btn-modern btn-primary mt-3">
+                        <i class="bi bi-plus-circle"></i> Ajouter un graphique
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Section Activités et Projets -->
+<div class="row">
+    <!-- Dernières activités -->
+    <div class="col-lg-8 mb-4">
+        <div class="card card-modern">
+            <div class="card-header-modern">
+                <h5 class="card-title-modern">
+                    <i class="bi bi-activity"></i>
+                    Dernières activités
+                </h5>
+            </div>
+            <div class="card-body-modern">
+                {% if recent_activities %}
+                <div class="activity-timeline">
+                    {% for activity in recent_activities %}
+                    <div class="activity-item">
+                        <div class="activity-icon activity-icon-{{ activity.type }}">
+                            <i class="bi bi-{{ activity.icon }}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">{{ activity.title }}</div>
+                            <div class="activity-description">{{ activity.description }}</div>
+                            <div class="activity-time">
+                                <i class="bi bi-clock"></i>
+                                {{ activity.date|format_date }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-clock-history empty-state-icon"></i>
+                    <p class="empty-state-text">Aucune activité récente</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications et Projets -->
+    <div class="col-lg-4">
+        <!-- Notifications -->
+        <div class="card card-modern mb-4">
+            <div class="card-header-modern">
+                <h5 class="card-title-modern">
+                    <i class="bi bi-bell"></i>
+                    Notifications
+                </h5>
+                {% if unread_notifications > 0 %}
+                <span class="badge-modern badge-danger">{{ unread_notifications }}</span>
+                {% endif %}
+            </div>
+            <div class="card-body-modern">
+                {% if unread_notifications > 0 %}
+                <div class="notification-list">
+                    {% for notification in current_user.notifications.filter_by(is_read=False).limit(5).all() %}
+                    <div class="notification-item">
+                        <div class="notification-icon">
+                            <i class="bi bi-info-circle"></i>
+                        </div>
+                        <div class="notification-content">
+                            <div class="notification-title">{{ notification.title }}</div>
+                            <div class="notification-message">{{ notification.message|truncate(60) }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('admin.notifications') }}" class="btn btn-modern btn-outline-primary btn-sm">
+                        Voir toutes les notifications
+                    </a>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-check2-circle empty-state-icon"></i>
+                    <p class="empty-state-text">Aucune notification</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Projets en cours -->
+        <div class="card card-modern">
+            <div class="card-header-modern">
+                <h5 class="card-title-modern">
+                    <i class="bi bi-kanban"></i>
+                    Projets en cours
+                </h5>
+            </div>
+            <div class="card-body-modern">
+                {% if active_projects %}
+                <div class="project-list">
+                    {% for project in active_projects %}
+                    <div class="project-item">
+                        <a href="{{ url_for('projects.view', project_id=project.id) }}" class="project-link">
+                            <div class="project-name">{{ project.name }}</div>
+                            <div class="project-progress">
+                                <div class="progress-modern">
+                                    <div class="progress-bar-modern bg-success" 
+                                         style="width: {{ project.get_progress() }}%"></div>
+                                </div>
+                                <span class="progress-text">{{ project.get_progress()|round|int }}%</span>
+                            </div>
+                            <div class="project-date">
+                                <i class="bi bi-calendar"></i>
+                                {{ project.end_date|format_date }}
+                            </div>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-kanban empty-state-icon"></i>
+                    <p class="empty-state-text">Aucun projet en cours</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script>
+$(document).ready(function() {
+    // Rafraîchir le dashboard
+    $('#refreshDashboard').on('click', function() {
+        const btn = $(this);
+        btn.prop('disabled', true);
+        btn.html('<i class="bi bi-arrow-clockwise spin"></i> Actualisation...');
+        
+        setTimeout(function() {
+            location.reload();
+        }, 500);
+    });
+    
+    // Charger les graphiques
+    {% for chart in charts %}
+    loadChartData({{ chart.id }}, '{{ chart.chart_type }}', '{{ chart.data_source }}');
+    {% endfor %}
+    
+    // Activer/désactiver un graphique
+    $('.toggle-chart').on('click', function() {
+        const chartId = $(this).data('id');
+        const button = $(this);
+        
+        $.ajax({
+            url: '/dashboard/charts/' + chartId + '/toggle',
+            type: 'POST',
+            data: {
+                csrf_token: $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                if (response.success) {
+                    showToast('success', 'Graphique mis à jour.');
+                    setTimeout(() => location.reload(), 1000);
+                }
+            }
+        });
+    });
+    
+    // Supprimer un graphique
+    $('.delete-chart').on('click', function() {
+        const chartId = $(this).data('id');
+        
+        if (confirm('Êtes-vous sûr de vouloir supprimer ce graphique ?')) {
+            $.ajax({
+                url: '/dashboard/charts/' + chartId + '/delete',
+                type: 'POST',
+                data: {
+                    csrf_token: $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showToast('success', 'Graphique supprimé.');
+                        setTimeout(() => location.reload(), 1000);
+                    }
+                }
+            });
+        }
+    });
+});
+
+function loadChartData(chartId, chartType, dataSource) {
+    $.ajax({
+        url: '/dashboard/api/chart-data/' + chartId,
+        type: 'GET',
+        success: function(response) {
+            if (response.success) {
+                renderModernChart('chart-' + chartId, chartType, response.data);
+            }
+        }
+    });
+}
+
+function renderModernChart(canvasId, chartType, data) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    
+    new Chart(ctx, {
+        type: chartType,
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        usePointStyle: true,
+                        font: {
+                            family: "'Inter', sans-serif",
+                            size: 12
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    cornerRadius: 8,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    }
+                }
+            },
+            scales: chartType === 'pie' || chartType === 'doughnut' ? {} : {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        font: {
+                            family: "'Inter', sans-serif"
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        font: {
+                            family: "'Inter', sans-serif"
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Animation pour les compteurs
+function animateValue(element, start, end, duration) {
+    let startTimestamp = null;
+    const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        element.innerHTML = Math.floor(progress * (end - start) + start);
+        if (progress < 1) {
+            window.requestAnimationFrame(step);
+        }
+    };
+    window.requestAnimationFrame(step);
+}
+
+// Animer les valeurs des statistiques au chargement
+$(window).on('load', function() {
+    $('.stat-value').each(function() {
+        const value = parseInt($(this).text()) || 0;
+        if (value > 0) {
+            animateValue(this, 0, value, 1000);
+        }
+    });
+});
+</script>
+{% endblock %}

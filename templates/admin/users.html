@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des utilisateurs - {{ app_name }}{% endblock %}
+
+{% block page_title %}
+<i class="bi bi-people"></i> Gestion des utilisateurs
+{% endblock %}
+
+{% block page_actions %}
+<a href="{{ url_for('auth.register') }}" class="btn btn-primary">
+    <i class="bi bi-person-plus"></i> Nouvel utilisateur
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Liste des utilisateurs</h5>
+            <div class="d-flex gap-2">
+                <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Rechercher...">
+                <button class="btn btn-sm btn-outline-secondary" onclick="filterTable()">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover datatable">
+                <thead>
+                    <tr>
+                        <th>Nom d'utilisateur</th>
+                        <th>Nom complet</th>
+                        <th>Email</th>
+                        <th>Rôle</th>
+                        <th>Statut</th>
+                        <th>Dernière connexion</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>
+                            <strong>{{ user.username }}</strong>
+                        </td>
+                        <td>{{ user.get_full_name() }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            <span class="badge bg-primary">{{ user.role.name if user.role else 'Aucun' }}</span>
+                        </td>
+                        <td>
+                            {% if user.is_active %}
+                            <span class="badge bg-success">Actif</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactif</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.last_login %}
+                            {{ user.last_login|format_date('%d/%m/%Y %H:%M') }}
+                            {% else %}
+                            <span class="text-muted">Jamais</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="#" 
+                                   class="btn btn-outline-warning" title="Réinitialiser le mot de passe">
+                                    <i class="bi bi-key"></i>
+                                </a>
+                                
+                                {% if current_user.id != user.id %}
+                                <button class="btn btn-outline-{{ 'secondary' if user.is_active else 'success' }}" 
+                                        onclick="toggleUserStatus({{ user.id }})"
+                                        title="{{ 'Désactiver' if user.is_active else 'Activer' }}">
+                                    <i class="bi bi-{{ 'x-circle' if user.is_active else 'check-circle' }}"></i>
+                                </button>
+                                
+                                <button class="btn btn-outline-danger" 
+                                        onclick="deleteUser({{ user.id }}, '{{ user.username }}')"
+                                        title="Supprimer">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer">
+        <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">{{ users|length }} utilisateur(s)</small>
+            <div>
+                <a href="{{ url_for('admin.roles') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-shield-check"></i> Gérer les rôles
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="confirmMessage">
+                <!-- Message de confirmation -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-danger" id="confirmAction">Confirmer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterTable() {
+    const searchText = $('#searchInput').val().toLowerCase();
+    $('table.datatable tbody tr').each(function() {
+        const rowText = $(this).text().toLowerCase();
+        $(this).toggle(rowText.includes(searchText));
+    });
+}
+
+function toggleUserStatus(userId) {
+    $.ajax({
+        url: `/admin/users/${userId}/toggle`,
+        type: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                location.reload();
+            } else {
+                alert(response.message || 'Erreur lors de la modification du statut');
+            }
+        },
+        error: function() {
+            alert('Erreur réseau');
+        }
+    });
+}
+
+function deleteUser(userId, username) {
+    $('#confirmMessage').html(`
+        <p>Êtes-vous sûr de vouloir supprimer l'utilisateur <strong>${username}</strong> ?</p>
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i> Cette action est irréversible. 
+            Toutes les données associées à cet utilisateur seront perdues.
+        </div>
+    `);
+    
+    $('#confirmAction').off('click').on('click', function() {
+        $.ajax({
+            url: `/admin/users/${userId}/delete`,
+            type: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    location.reload();
+                } else {
+                    alert(response.message || 'Erreur lors de la suppression');
+                }
+            },
+            error: function() {
+                alert('Erreur réseau');
+            }
+        });
+        $('#confirmModal').modal('hide');
+    });
+    
+    $('#confirmModal').modal('show');
+}
+
+// Recherche en temps réel
+$('#searchInput').on('keyup', function() {
+    filterTable();
+});
+</script>
+
+<style>
+.btn-group-sm > .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}

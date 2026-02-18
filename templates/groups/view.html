@@ -1,0 +1,573 @@
+{% extends "base.html" %}
+
+{% block title %}{{ group.name }} - {{ app_name }}{% endblock %}
+
+{% block page_title %}
+<i class="bi bi-people-fill"></i> {{ group.name }}
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{{ url_for('groups.index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Retour
+    </a>
+    {% if current_user.has_permission('personnel', 'update') %}
+    <a href="{{ url_for('groups.edit', group_id=group.id) }}" class="btn btn-warning">
+        <i class="bi bi-pencil"></i> Modifier
+    </a>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#manageMembersModal">
+        <i class="bi bi-person-plus"></i> Gérer les membres
+    </button>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Colonne gauche - Informations du groupe -->
+    <div class="col-lg-4">
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informations</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Nom du groupe:</strong>
+                    <p class="mb-0">{{ group.name }}</p>
+                </div>
+                
+                {% if group.description %}
+                <div class="mb-3">
+                    <strong>Description:</strong>
+                    <p class="mb-0">{{ group.description }}</p>
+                </div>
+                {% endif %}
+                
+                <div class="mb-3">
+                    <strong>Créé le:</strong>
+                    <p class="mb-0">{{ group.created_at|format_datetime }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Statistiques -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Statistiques</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3">
+                            <i class="bi bi-people text-primary fs-2"></i>
+                            <h4 class="mt-2 mb-1">{{ group.members|length }}</h4>
+                            <p class="text-muted small mb-0">Membres</p>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="border rounded p-3">
+                            <i class="bi bi-list-task text-success fs-2"></i>
+                            <h4 class="mt-2 mb-1">{{ group.tasks|length }}</h4>
+                            <p class="text-muted small mb-0">Tâches</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Colonne droite - Membres et tâches -->
+    <div class="col-lg-8">
+        <!-- Membres -->
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-people"></i> Membres du groupe</h5>
+                <span class="badge bg-primary">{{ group.members|length }}</span>
+            </div>
+            <div class="card-body">
+                {% if group.members|length > 0 %}
+                <div class="row">
+                    {% for member in group.members %}
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex align-items-center p-3 border rounded">
+                            <div class="me-3">
+                                <i class="bi bi-person-circle text-primary" style="font-size: 2rem;"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <a href="{{ url_for('personnel.view', personnel_id=member.id) }}" 
+                                   class="text-decoration-none fw-bold">
+                                    {{ member.get_full_name() }}
+                                </a>
+                                <br>
+                                <small class="text-muted">
+                                    {{ member.employee_id }}
+                                    {% if member.department %}
+                                     • {{ member.department }}
+                                    {% endif %}
+                                </small>
+                                {% if member.position %}
+                                <br>
+                                <small class="text-muted">{{ member.position }}</small>
+                                {% endif %}
+                            </div>
+                            <div>
+                                {% if member.is_active %}
+                                <span class="badge bg-success">Actif</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactif</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if current_user.has_permission('personnel', 'update') %}
+                <div class="text-center mt-3">
+                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#manageMembersModal">
+                        <i class="bi bi-person-gear"></i> Gérer les membres
+                    </button>
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-person-x text-muted" style="font-size: 3rem;"></i>
+                    <p class="text-muted mt-3">Aucun membre dans ce groupe</p>
+                    {% if current_user.has_permission('personnel', 'update') %}
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#manageMembersModal">
+                        <i class="bi bi-person-plus"></i> Ajouter des membres
+                    </button>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Tâches assignées -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-list-task"></i> Tâches assignées</h5>
+                <span class="badge bg-success">{{ group.tasks|length }}</span>
+            </div>
+            <div class="card-body">
+                {% if assigned_tasks %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>Tâche</th>
+                                <th>Projet</th>
+                                <th>Dates</th>
+                                <th>Statut</th>
+                                <th>Priorité</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task in assigned_tasks %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('projects.view_task', task_id=task.id) }}">
+                                        {{ task.name }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('projects.view', project_id=task.project.id) }}">
+                                        {{ task.project.name }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <small>
+                                        {{ task.start_date|format_date }}<br>
+                                        au {{ task.end_date|format_date }}
+                                    </small>
+                                </td>
+                                <td>
+                                    {% if task.status == 'pending' %}
+                                        <span class="badge bg-secondary">En attente</span>
+                                    {% elif task.status == 'in_progress' %}
+                                        <span class="badge bg-primary">En cours</span>
+                                    {% elif task.status == 'completed' %}
+                                        <span class="badge bg-success">Terminée</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Annulée</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if task.priority == 'high' %}
+                                        <i class="bi bi-arrow-up-circle-fill text-danger"></i>
+                                    {% elif task.priority == 'medium' %}
+                                        <i class="bi bi-dash-circle-fill text-warning"></i>
+                                    {% else %}
+                                        <i class="bi bi-arrow-down-circle-fill text-success"></i>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if group.tasks|length > 10 %}
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('groups.group_tasks', group_id=group.id) }}" 
+                       class="btn btn-sm btn-outline-primary">
+                        Voir toutes les tâches ({{ group.tasks|length }})
+                    </a>
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-list-task text-muted" style="font-size: 3rem;"></i>
+                    <p class="text-muted mt-3">Aucune tâche assignée à ce groupe</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actions dangereuses -->
+{% if current_user.has_permission('personnel', 'delete') %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Zone dangereuse</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">
+                    La suppression d'un groupe est irréversible. Les membres ne seront pas supprimés, 
+                    mais le groupe ne pourra plus être assigné à de nouvelles tâches.
+                </p>
+                <form method="POST" action="{{ url_for('groups.delete', group_id=group.id) }}" 
+                      onsubmit="return confirm('Êtes-vous absolument sûr de vouloir supprimer le groupe {{ group.name }} ? Cette action est irréversible.')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Supprimer ce groupe
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal Gestion des membres -->
+{% if current_user.has_permission('personnel', 'update') %}
+<div class="modal fade" id="manageMembersModal" tabindex="-1" aria-labelledby="manageMembersModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="manageMembersModalLabel">
+                    <i class="bi bi-person-gear"></i> Gérer les membres - {{ group.name }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Onglets -->
+                <ul class="nav nav-tabs mb-3" id="memberTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="add-tab" data-bs-toggle="tab" data-bs-target="#add-panel" type="button">
+                            <i class="bi bi-person-plus"></i> Ajouter
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="remove-tab" data-bs-toggle="tab" data-bs-target="#remove-panel" type="button">
+                            <i class="bi bi-person-dash"></i> Membres actuels <span class="badge bg-secondary ms-1">{{ group.members|length }}</span>
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content" id="memberTabsContent">
+                    <!-- Panel Ajouter -->
+                    <div class="tab-pane fade show active" id="add-panel">
+                        <!-- Barre de recherche -->
+                        <div class="mb-3">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control" id="searchPersonnel" 
+                                       placeholder="Rechercher un personnel par nom, prénom ou matricule..." autocomplete="off">
+                            </div>
+                            <small class="text-muted">Tapez au moins 2 caractères pour rechercher</small>
+                        </div>
+                        
+                        <!-- Indicateur de chargement -->
+                        <div id="loadingIndicator" class="text-center d-none">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Chargement...</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Liste des personnels -->
+                        <div id="personnelList" class="list-group">
+                            <!-- Rempli par AJAX -->
+                        </div>
+                        
+                        <!-- Message aucun résultat -->
+                        <div id="noResults" class="text-center text-muted d-none">
+                            <i class="bi bi-search" style="font-size: 2rem;"></i>
+                            <p class="mt-2">Aucun personnel trouvé</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Panel Retirer -->
+                    <div class="tab-pane fade" id="remove-panel">
+                        <div id="currentMembersList" class="list-group">
+                            {% for member in group.members %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center" data-member-id="{{ member.id }}">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-person-circle text-primary fs-4 me-3"></i>
+                                    <div>
+                                        <div class="fw-bold">{{ member.get_full_name() }}</div>
+                                        <small class="text-muted">{{ member.employee_id }} {% if member.department %}• {{ member.department }}{% endif %}</small>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-danger btn-sm remove-member-btn" 
+                                        data-personnel-id="{{ member.id }}" data-personnel-name="{{ member.get_full_name() }}">
+                                    <i class="bi bi-x-lg"></i> Retirer
+                                </button>
+                            </div>
+                            {% else %}
+                            <div class="text-center text-muted py-4">
+                                <i class="bi bi-person-x" style="font-size: 3rem;"></i>
+                                <p class="mt-2">Aucun membre dans ce groupe</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    let searchTimeout;
+    const groupId = {{ group.id }};
+    let currentMemberIds = [{% for member in group.members %}{{ member.id }},{% endfor %}];
+    
+    // Recherche avec debounce
+    $('#searchPersonnel').on('input', function() {
+        const query = $(this).val().trim();
+        
+        clearTimeout(searchTimeout);
+        
+        if (query.length < 2) {
+            $('#personnelList').empty();
+            $('#noResults').addClass('d-none');
+            return;
+        }
+        
+        $('#loadingIndicator').removeClass('d-none');
+        $('#personnelList').empty();
+        $('#noResults').addClass('d-none');
+        
+        searchTimeout = setTimeout(function() {
+            searchPersonnel(query);
+        }, 300);
+    });
+    
+    // Fonction de recherche AJAX
+    function searchPersonnel(query) {
+        $.ajax({
+            url: '{{ url_for("personnel.personnel_list_api") }}',
+            method: 'GET',
+            data: { search: query },
+            success: function(response) {
+                $('#loadingIndicator').addClass('d-none');
+                displayPersonnel(response.results);
+            },
+            error: function() {
+                $('#loadingIndicator').addClass('d-none');
+                $('#personnelList').html('<div class="alert alert-danger">Erreur lors de la recherche</div>');
+            }
+        });
+    }
+    
+    // Afficher les résultats
+    function displayPersonnel(personnel) {
+        const container = $('#personnelList');
+        container.empty();
+        
+        // Filtrer les personnels déjà membres et inactifs
+        const availablePersonnel = personnel.filter(p => {
+            return !currentMemberIds.includes(p.id) && p.is_active !== false;
+        });
+        
+        if (availablePersonnel.length === 0) {
+            $('#noResults').removeClass('d-none');
+            return;
+        }
+        
+        $('#noResults').addClass('d-none');
+        
+        availablePersonnel.forEach(function(person) {
+            const item = `
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-person-circle text-secondary fs-4 me-3"></i>
+                        <div>
+                            <div class="fw-bold">${person.name}</div>
+                            <small class="text-muted">${person.employee_id}</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-success btn-sm add-member-btn" 
+                            data-personnel-id="${person.id}" data-personnel-name="${person.name}">
+                        <i class="bi bi-plus-lg"></i> Ajouter
+                    </button>
+                </div>
+            `;
+            container.append(item);
+        });
+    }
+    
+    // Ajouter un membre (délégation d'événement)
+    $('#personnelList').on('click', '.add-member-btn', function() {
+        const personnelId = $(this).data('personnel-id');
+        const personnelName = $(this).data('personnel-name');
+        const btn = $(this);
+        
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+        
+        $.ajax({
+            url: '{{ url_for("groups.add_member_ajax", group_id=group.id) }}',
+            method: 'POST',
+            data: {
+                personnel_id: personnelId,
+                csrf_token: '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Mettre à jour l'interface
+                    btn.removeClass('btn-success').addClass('btn-secondary');
+                    btn.html('<i class="bi bi-check-lg"></i> Ajouté');
+                    
+                    // Ajouter à la liste des IDs actuels
+                    currentMemberIds.push(personnelId);
+                    
+                    // Ajouter visuellement à l'onglet "Membres actuels"
+                    const newMemberHtml = `
+                        <div class="list-group-item d-flex justify-content-between align-items-center" data-member-id="${personnelId}">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-person-circle text-primary fs-4 me-3"></i>
+                                <div>
+                                    <div class="fw-bold">${personnelName}</div>
+                                    <small class="text-muted">${response.member.employee_id || ''}</small>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-danger btn-sm remove-member-btn" 
+                                    data-personnel-id="${personnelId}" data-personnel-name="${personnelName}">
+                                <i class="bi bi-x-lg"></i> Retirer
+                            </button>
+                        </div>
+                    `;
+                    
+                    // Supprimer le message "Aucun membre" s'il existe
+                    $('#currentMembersList .text-center').remove();
+                    $('#currentMembersList').prepend(newMemberHtml);
+                    
+                    // Mettre à jour le compteur
+                    const currentCount = currentMemberIds.length;
+                    $('#remove-tab .badge').text(currentCount);
+                    
+                    showNotification(`${personnelName} a été ajouté au groupe`, 'success');
+                } else {
+                    btn.prop('disabled', false).html('<i class="bi bi-plus-lg"></i> Ajouter');
+                    showNotification(response.error || 'Erreur lors de l\'ajout', 'danger');
+                }
+            },
+            error: function() {
+                btn.prop('disabled', false).html('<i class="bi bi-plus-lg"></i> Ajouter');
+                showNotification('Erreur de connexion', 'danger');
+            }
+        });
+    });
+    
+    // Retirer un membre (délégation d'événement)
+    $('#currentMembersList').on('click', '.remove-member-btn', function() {
+        const personnelId = $(this).data('personnel-id');
+        const personnelName = $(this).data('personnel-name');
+        const btn = $(this);
+        const item = btn.closest('.list-group-item');
+        
+        if (!confirm(`Êtes-vous sûr de vouloir retirer ${personnelName} du groupe ?`)) {
+            return;
+        }
+        
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+        
+        $.ajax({
+            url: '{{ url_for("groups.remove_member_ajax", group_id=group.id) }}',
+            method: 'POST',
+            data: {
+                personnel_id: personnelId,
+                csrf_token: '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Retirer de la liste des IDs
+                    currentMemberIds = currentMemberIds.filter(id => id !== personnelId);
+                    
+                    // Animer la suppression
+                    item.fadeOut(300, function() {
+                        $(this).remove();
+                        
+                        // Si plus de membres, afficher le message vide
+                        if (currentMemberIds.length === 0) {
+                            $('#currentMembersList').html(`
+                                <div class="text-center text-muted py-4">
+                                    <i class="bi bi-person-x" style="font-size: 3rem;"></i>
+                                    <p class="mt-2">Aucun membre dans ce groupe</p>
+                                </div>
+                            `);
+                        }
+                    });
+                    
+                    // Mettre à jour le compteur
+                    $('#remove-tab .badge').text(currentMemberIds.length);
+                    
+                    showNotification(`${personnelName} a été retiré du groupe`, 'success');
+                } else {
+                    btn.prop('disabled', false).html('<i class="bi bi-x-lg"></i> Retirer');
+                    showNotification(response.error || 'Erreur lors du retrait', 'danger');
+                }
+            },
+            error: function() {
+                btn.prop('disabled', false).html('<i class="bi bi-x-lg"></i> Retirer');
+                showNotification('Erreur de connexion', 'danger');
+            }
+        });
+    });
+    
+    // Fonction de notification
+    function showNotification(message, type) {
+        const alert = $(`
+            <div class="alert alert-${type} alert-dismissible fade show position-fixed" 
+                 style="z-index: 9999; top: 20px; right: 20px; min-width: 300px;">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `);
+        $('body').append(alert);
+        setTimeout(() => alert.alert('close'), 3000);
+    }
+    
+    // Vider la recherche à l'ouverture du modal
+    $('#manageMembersModal').on('shown.bs.modal', function() {
+        $('#searchPersonnel').val('').focus();
+        $('#personnelList').empty();
+        $('#noResults').addClass('d-none');
+    });
+});
+</script>
+{% endblock %}

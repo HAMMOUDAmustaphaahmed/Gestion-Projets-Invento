@@ -1,0 +1,439 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-exclamation-triangle text-warning"></i> 
+                Alertes Stock
+            </h2>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('stock.index') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Retour au stock
+                </a>
+                <button class="btn btn-primary" onclick="window.print()">
+                    <i class="bi bi-printer"></i> Imprimer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistiques des alertes -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card border-danger">
+            <div class="card-body text-center">
+                <i class="bi bi-exclamation-octagon text-danger" style="font-size: 2.5rem;"></i>
+                <h3 class="mt-2 mb-0 text-danger">{{ alert_items|length }}</h3>
+                <p class="text-muted mb-0">Alertes actives</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <i class="bi bi-box-seam text-warning" style="font-size: 2.5rem;"></i>
+                <h3 class="mt-2 mb-0 text-warning">
+                    {{ alert_items|selectattr('quantity', 'equalto', 0)|list|length }}
+                </h3>
+                <p class="text-muted mb-0">Ruptures de stock</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <i class="bi bi-arrow-down-circle text-info" style="font-size: 2.5rem;"></i>
+                <h3 class="mt-2 mb-0 text-info">
+                    {{ alert_items|rejectattr('quantity', 'equalto', 0)|list|length }}
+                </h3>
+                <p class="text-muted mb-0">Stock bas (non nul)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alertes critiques (rupture de stock) -->
+{% set critical_items = alert_items|selectattr('quantity', 'equalto', 0)|list %}
+{% if critical_items %}
+<div class="card border-danger mb-4">
+    <div class="card-header bg-danger bg-opacity-10">
+        <h5 class="mb-0 text-danger">
+            <i class="bi bi-exclamation-octagon"></i> 
+            Ruptures de stock ({{ critical_items|length }})
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <strong>Attention!</strong> Ces articles sont en rupture de stock et nécessitent un réapprovisionnement immédiat.
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Référence</th>
+                        <th>Libellé</th>
+                        <th>Catégorie</th>
+                        <th>Fournisseur</th>
+                        <th>Quantité min.</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in critical_items %}
+                    <tr class="table-danger">
+                        <td>
+                            <strong>{{ item.reference }}</strong>
+                            <span class="badge bg-danger ms-2">Rupture</span>
+                        </td>
+                        <td>{{ item.libelle }}</td>
+                        <td>
+                            {% if item.category %}
+                            <span class="badge bg-secondary">{{ item.category.name }}</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.supplier %}
+                            {{ item.supplier.name }}
+                            {% if item.supplier.phone %}
+                            <br><small class="text-muted">
+                                <i class="bi bi-telephone"></i> {{ item.supplier.phone }}
+                            </small>
+                            {% endif %}
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-warning">{{ item.min_quantity }}</span>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('stock.view', item_id=item.id) }}" 
+                                   class="btn btn-outline-primary" title="Voir">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('stock.edit', item_id=item.id) }}" 
+                                   class="btn btn-outline-warning" title="Modifier">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button class="btn btn-outline-success" 
+                                        onclick="quickOrder({{ item.id }}, '{{ item.reference }}')"
+                                        title="Commander">
+                                    <i class="bi bi-cart-plus"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Alertes stock bas -->
+{% set warning_items = alert_items|rejectattr('quantity', 'equalto', 0)|list %}
+{% if warning_items %}
+<div class="card border-warning">
+    <div class="card-header bg-warning bg-opacity-10">
+        <h5 class="mb-0 text-warning">
+            <i class="bi bi-exclamation-triangle"></i> 
+            Stock bas ({{ warning_items|length }})
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-warning">
+            <i class="bi bi-info-circle"></i>
+            Ces articles ont atteint ou sont en dessous de leur seuil minimal et nécessitent un réapprovisionnement.
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Référence</th>
+                        <th>Libellé</th>
+                        <th>Catégorie</th>
+                        <th>Quantité actuelle</th>
+                        <th>Quantité min.</th>
+                        <th>Fournisseur</th>
+                        <th>Niveau</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in warning_items|sort(attribute='quantity') %}
+                    <tr class="table-warning">
+                        <td>
+                            <strong>{{ item.reference }}</strong>
+                        </td>
+                        <td>{{ item.libelle }}</td>
+                        <td>
+                            {% if item.category %}
+                            <span class="badge bg-secondary">{{ item.category.name }}</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-danger fs-6">{{ item.quantity }}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-warning">{{ item.min_quantity }}</span>
+                        </td>
+                        <td>
+                            {% if item.supplier %}
+                            {{ item.supplier.name }}
+                            {% if item.supplier.phone %}
+                            <br><small class="text-muted">
+                                <i class="bi bi-telephone"></i> {{ item.supplier.phone }}
+                            </small>
+                            {% endif %}
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set percentage = (item.quantity / item.min_quantity * 100) if item.min_quantity > 0 else 0 %}
+                            <div class="progress" style="height: 20px; min-width: 100px;">
+                                <div class="progress-bar bg-danger" 
+                                     role="progressbar" 
+                                     style="width: {{ percentage }}%">
+                                    {{ "%.0f"|format(percentage) }}%
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('stock.view', item_id=item.id) }}" 
+                                   class="btn btn-outline-primary" title="Voir">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('stock.edit', item_id=item.id) }}" 
+                                   class="btn btn-outline-warning" title="Modifier">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button class="btn btn-outline-success" 
+                                        onclick="quickOrder({{ item.id }}, '{{ item.reference }}')"
+                                        title="Commander">
+                                    <i class="bi bi-cart-plus"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Message si aucune alerte -->
+{% if not alert_items %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="bi bi-check-circle text-success" style="font-size: 4rem;"></i>
+        <h4 class="mt-3 text-success">Aucune alerte stock!</h4>
+        <p class="text-muted">Tous les articles sont au-dessus de leur seuil minimal.</p>
+        <a href="{{ url_for('stock.index') }}" class="btn btn-primary mt-3">
+            <i class="bi bi-box-seam"></i> Voir le stock complet
+        </a>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal commande rapide -->
+<div class="modal fade" id="quickOrderModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Commande rapide</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="quickOrderForm">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        Créer une commande de réapprovisionnement pour cet article.
+                    </div>
+                    
+                    <input type="hidden" id="orderItemId">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Article</label>
+                        <input type="text" class="form-control" id="orderItemRef" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Quantité à commander *</label>
+                        <input type="number" class="form-control" id="orderQuantity" min="1" required>
+                        <small class="text-muted">Quantité recommandée basée sur le minimum</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Date de livraison souhaitée</label>
+                        <input type="date" class="form-control" id="orderDeliveryDate">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Priorité</label>
+                        <select class="form-select" id="orderPriority">
+                            <option value="high">Haute (urgent)</option>
+                            <option value="medium" selected>Moyenne</option>
+                            <option value="low">Basse</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-control" id="orderNotes" rows="3" 
+                                  placeholder="Informations complémentaires..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-cart-check"></i> Créer la commande
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+@media print {
+    .btn, .btn-group, .modal {
+        display: none !important;
+    }
+    
+    .card {
+        page-break-inside: avoid;
+        border: 1px solid #dee2e6;
+    }
+    
+    .table {
+        font-size: 0.9rem;
+    }
+}
+
+.table-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.table-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+.progress {
+    border: 1px solid #dee2e6;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function quickOrder(itemId, itemRef) {
+    $('#orderItemId').val(itemId);
+    $('#orderItemRef').val(itemRef);
+    
+    // Récupérer les informations de l'article via AJAX
+    $.ajax({
+        url: '/stock/api/item/' + itemId,
+        type: 'GET',
+        success: function(response) {
+            if (response.success) {
+                var item = response.item;
+                // Calculer la quantité recommandée (2x le minimum)
+                var recommendedQty = Math.max(item.min_quantity * 2 - item.quantity, item.min_quantity);
+                $('#orderQuantity').val(recommendedQty);
+            }
+        }
+    });
+    
+    $('#quickOrderModal').modal('show');
+}
+
+$('#quickOrderForm').on('submit', function(e) {
+    e.preventDefault();
+    
+    var data = {
+        item_id: $('#orderItemId').val(),
+        quantity: $('#orderQuantity').val(),
+        delivery_date: $('#orderDeliveryDate').val(),
+        priority: $('#orderPriority').val(),
+        notes: $('#orderNotes').val()
+    };
+    
+    // Envoyer la commande (vous devrez implémenter l'API côté serveur)
+    $.ajax({
+        url: '/stock/api/create-order',
+        type: 'POST',
+        data: JSON.stringify(data),
+        contentType: 'application/json',
+        success: function(response) {
+            if (response.success) {
+                showToast('success', 'Commande créée avec succès');
+                $('#quickOrderModal').modal('hide');
+                $('#quickOrderForm')[0].reset();
+            } else {
+                showToast('error', response.message || 'Erreur lors de la création de la commande');
+            }
+        },
+        error: function() {
+            showToast('error', 'Erreur réseau');
+        }
+    });
+});
+
+// Fonction toast (à adapter selon votre implémentation)
+function showToast(type, message) {
+    var bgClass = type === 'success' ? 'bg-success' : 'bg-danger';
+    var icon = type === 'success' ? 'check-circle' : 'x-circle';
+    
+    var toast = `
+        <div class="toast align-items-center text-white ${bgClass} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi bi-${icon}"></i> ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    
+    // Afficher le toast (nécessite un conteneur toast dans base.html)
+    var toastContainer = $('.toast-container');
+    if (!toastContainer.length) {
+        $('body').append('<div class="toast-container position-fixed top-0 end-0 p-3"></div>');
+        toastContainer = $('.toast-container');
+    }
+    
+    toastContainer.append(toast);
+    var toastElement = toastContainer.find('.toast').last();
+    var bsToast = new bootstrap.Toast(toastElement[0]);
+    bsToast.show();
+    
+    // Supprimer après affichage
+    toastElement.on('hidden.bs.toast', function() {
+        $(this).remove();
+    });
+}
+
+// Impression
+window.addEventListener('beforeprint', function() {
+    $('.modal').modal('hide');
+});
+</script>
+{% endblock %}

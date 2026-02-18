@@ -1,0 +1,567 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-box-seam"></i> {{ item.reference }} - {{ item.libelle }}</h2>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('stock.index') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Retour
+                </a>
+                {% if current_user.has_permission('stock', 'update') %}
+                <a href="{{ url_for('stock.edit', item_id=item.id) }}" class="btn btn-warning">
+                    <i class="bi bi-pencil"></i> Modifier
+                </a>
+                {% endif %}
+                {% if current_user.has_permission('stock', 'delete') %}
+                <form method="POST" action="{{ url_for('stock.delete', item_id=item.id) }}" class="d-inline"
+                      onsubmit="return confirm('Supprimer cet élément du stock ?')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Supprimer
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Colonne principale -->
+    <div class="col-lg-8">
+        <!-- Informations principales -->
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informations générales</h5>
+                <div>
+                    {% if item.check_alert() %}
+                        <span class="badge bg-danger">Stock bas</span>
+                    {% elif item.quantity == 0 %}
+                        <span class="badge bg-secondary">Rupture</span>
+                    {% else %}
+                        <span class="badge bg-success">Disponible</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Référence:</strong>
+                        <p class="mb-0">{{ item.reference }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Type:</strong>
+                        <p class="mb-0">{{ item.item_type }}</p>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <strong>Libellé:</strong>
+                        <p class="mb-0">{{ item.libelle }}</p>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Quantité en stock:</strong>
+                        <h4 class="mb-0 {% if item.check_alert() %}text-danger{% elif item.quantity == 0 %}text-secondary{% else %}text-success{% endif %}">
+                            {{ item.quantity }}
+                        </h4>
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Quantité minimale:</strong>
+                        <h4 class="mb-0 text-warning">{{ item.min_quantity }}</h4>
+                    </div>
+                    <div class="col-md-4">
+                        {% if item.check_alert() %}
+                        <div class="alert alert-danger mb-0">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Alerte stock!</strong><br>
+                            <small>Stock en dessous du minimum</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Prix unitaire:</strong>
+                        <p class="mb-0 fs-5 text-primary">{{ item.price | format_currency }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Valeur totale:</strong>
+                        <p class="mb-0 fs-5 text-success">{{ item.value | format_currency }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted">Valeur = Prix × Quantité</small>
+                    </div>
+                </div>
+
+                {% if item.location %}
+                <hr>
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <strong><i class="bi bi-geo-alt"></i> Emplacement:</strong>
+                        <p class="mb-0">{{ item.location }}</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if item.category %}
+                <hr>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong><i class="bi bi-tag"></i> Catégorie:</strong>
+                        <p class="mb-0">
+                            <span class="badge bg-secondary">{{ item.category.name }}</span>
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if item.supplier %}
+                <hr>
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <strong><i class="bi bi-truck"></i> Fournisseur:</strong>
+                        <p class="mb-1">{{ item.supplier.name }}</p>
+                        {% if item.supplier.contact_person %}
+                        <small class="text-muted">Contact: {{ item.supplier.contact_person }}</small><br>
+                        {% endif %}
+                        {% if item.supplier.phone %}
+                        <small class="text-muted">Tél: {{ item.supplier.phone }}</small><br>
+                        {% endif %}
+                        {% if item.supplier.email %}
+                        <small class="text-muted">Email: {{ item.supplier.email }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if item.notes %}
+                <hr>
+                <div class="row">
+                    <div class="col-md-12">
+                        <strong><i class="bi bi-sticky"></i> Notes:</strong>
+                        <p class="mb-0">{{ item.notes }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Attributs dynamiques -->
+        {% if item.attributes.count() > 0 %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-list-ul"></i> Attributs spécifiques</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Attribut</th>
+                                <th>Valeur</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for attr in item.attributes %}
+                            <tr>
+                                <td><strong>{{ attr.name }}</strong></td>
+                                <td>{{ attr.value }}</td>
+                                <td>
+                                    <span class="badge bg-info">
+                                        {% if attr.data_type == 'string' %}Texte
+                                        {% elif attr.data_type == 'number' %}Nombre
+                                        {% elif attr.data_type == 'decimal' %}Décimal
+                                        {% elif attr.data_type == 'date' %}Date
+                                        {% else %}{{ attr.data_type }}
+                                        {% endif %}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Fichiers attachés -->
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-paperclip"></i> Fichiers attachés</h5>
+                {% if current_user.has_permission('stock', 'update') %}
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                    <i class="bi bi-upload"></i> Uploader
+                </button>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if item.files.count() > 0 %}
+                <div class="list-group">
+                    {% for file in item.files %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-file-earmark-{{ file.file_type }} fs-4 me-2 text-primary"></i>
+                            <a href="{{ url_for('stock.download_file', file_id=file.id) }}" class="fw-bold">
+                                {{ file.original_filename }}
+                            </a>
+                            {% if file.description %}
+                            <br><small class="text-muted ms-5">{{ file.description }}</small>
+                            {% endif %}
+                            <br><small class="text-muted ms-5">
+                                <i class="bi bi-clock"></i> {{ format_date(file.uploaded_at, '%d/%m/%Y %H:%M') }}
+                            </small>
+                        </div>
+                        <div>
+                            {% if current_user.has_permission('stock', 'delete') %}
+                            <form method="POST" action="{{ url_for('stock.delete_file', file_id=file.id) }}" class="d-inline">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                                <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                        onclick="return confirm('Supprimer ce fichier ?')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center mb-0 py-3">
+                    <i class="bi bi-file-earmark-x fs-1 d-block mb-2"></i>
+                    Aucun fichier attaché
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Utilisation dans les tâches -->
+        {% if item.task_stock_items.count() > 0 %}
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-list-check"></i> Utilisé dans les tâches</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Tâche</th>
+                                <th>Projet</th>
+                                <th>Quantité estimée</th>
+                                <th>Quantité utilisée</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task_item in item.task_stock_items %}
+
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('projects.view_task', task_id=task_item.task.id) }}">
+                                        {{ task_item.task.name }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('projects.view', project_id=task_item.task.project.id) }}">
+                                        {{ task_item.task.project.name }}
+                                    </a>
+                                </td>
+                                <td>{{ task_item.estimated_quantity }}</td>
+                                <td>{{ task_item.actual_quantity_used or '-' }}</td>
+                                <td>
+                                    {% if task_item.task.status == 'pending' %}
+                                        <span class="badge bg-secondary">En attente</span>
+                                    {% elif task_item.task.status == 'in_progress' %}
+                                        <span class="badge bg-primary">En cours</span>
+                                    {% elif task_item.task.status == 'completed' %}
+                                        <span class="badge bg-success">Terminée</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Annulée</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Colonne latérale -->
+    <div class="col-lg-4">
+        <!-- Statistiques rapides -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary bg-opacity-10">
+                <h6 class="mb-0 text-primary"><i class="bi bi-graph-up"></i> Statistiques</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted">Quantité disponible</small>
+                    <div class="progress" style="height: 25px;">
+                        {% set percentage = (item.quantity / (item.min_quantity ) * 100) if item.min_quantity > 0 else 100 %}
+                        <div class="progress-bar {% if item.check_alert() %}bg-danger{% else %}bg-success{% endif %}" 
+                             style="width: {{ [percentage, 100]|min }}%">
+                            {{ item.quantity }} / {{ item.min_quantity  if item.min_quantity > 0 else '∞' }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border rounded p-2">
+                            <div class="fs-4 fw-bold text-primary">{{ item.quantity }}</div>
+                            <small class="text-muted">En stock</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border rounded p-2">
+                            <div class="fs-4 fw-bold text-warning">{{ item.min_quantity }}</div>
+                            <small class="text-muted">Minimum</small>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Prix unitaire:</span>
+                    <strong>{{ item.price | format_currency }}</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Valeur totale:</span>
+                    <strong class="text-success">{{ item.value | format_currency }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-lightning"></i> Actions rapides</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if current_user.has_permission('stock', 'update') %}
+                    <button class="btn btn-outline-primary btn-sm" onclick="adjustStock('add')">
+                        <i class="bi bi-plus-circle"></i> Ajouter au stock
+                    </button>
+                    <button class="btn btn-outline-warning btn-sm" onclick="adjustStock('remove')">
+                        <i class="bi bi-dash-circle"></i> Retirer du stock
+                    </button>
+                    <button class="btn btn-outline-info btn-sm" onclick="adjustStock('adjust')">
+                        <i class="bi bi-pencil"></i> Ajuster le stock
+                    </button>
+                    <hr>
+                    
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Historique -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-clock-history"></i> Historique</h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">
+                    <strong>Créé le:</strong><br>
+                    <small class="text-muted">{{ item.created_at | format_date('%d/%m/%Y %H:%M') }}</small>
+                </p>
+                <p class="mb-0">
+                    <strong>Dernière modification:</strong><br>
+                    <small class="text-muted">{{ item.updated_at | format_date('%d/%m/%Y %H:%M') }}</small>
+                </p>
+                <hr>
+                <p class="mb-0">
+                    <strong>Utilisé dans:</strong><br>
+                    <small class="text-muted">{{ item.used_in_tasks }} tâche(s)</small>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Upload -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Uploader un fichier</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('stock.upload_file', item_id=item.id) }}" enctype="multipart/form-data">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Fichier</label>
+                        <input type="file" class="form-control" name="file" accept=".pdf,.png,.jpg,.jpeg" required>
+                        <small class="text-muted">Formats acceptés: PDF, PNG, JPG</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-control" name="description" placeholder="Description du fichier (optionnel)">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Uploader</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ajustement stock -->
+<div class="modal fade" id="adjustStockModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="adjustStockTitle">Ajuster le stock</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="adjustStockForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Type d'opération</label>
+                        <select class="form-select" id="adjustType" required>
+                            <option value="add">Ajouter au stock</option>
+                            <option value="remove">Retirer du stock</option>
+                            <option value="adjust">Ajuster (définir nouvelle quantité)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quantité</label>
+                        <input type="number" class="form-control" id="adjustQuantity" min="1" required>
+                        <small class="text-muted" id="currentStock">Stock actuel: {{ item.quantity }}</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Motif</label>
+                        <textarea class="form-control" id="adjustReason" rows="3" placeholder="Raison de l'ajustement..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Valider</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function quickMovement(type) {
+    const modal = new bootstrap.Modal(document.getElementById('quickMovementModal'));
+    const title = type === 'purchase' ? 'Entrée de stock' : 'Sortie de stock';
+    
+    document.getElementById('movementTitle').textContent = title;
+    document.getElementById('movementType').value = type;
+    document.getElementById('movementItemId').value = {{ item.id }};
+    
+    // Pré-remplir avec la quantité minimale pour les achats
+    if (type === 'purchase') {
+        document.getElementById('movementQuantity').value = Math.max(1, {{ item.min_quantity }});
+    } else {
+        document.getElementById('movementQuantity').value = 1;
+    }
+    
+    modal.show();
+}
+
+document.getElementById('quickMovementForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const data = {
+        item_id: document.getElementById('movementItemId').value,
+        type: document.getElementById('movementType').value,
+        quantity: parseFloat(document.getElementById('movementQuantity').value),
+        reason: document.getElementById('movementReason').value
+    };
+    
+    fetch('/stock/api/quick-movement', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showToast('success', result.message);
+            location.reload();
+        } else {
+            showToast('error', result.message);
+        }
+    })
+    .catch(error => {
+        showToast('error', 'Erreur réseau');
+    });
+    
+    const modal = bootstrap.Modal.getInstance(document.getElementById('quickMovementModal'));
+    modal.hide();
+});
+function adjustStock(type) {
+    $('#adjustType').val(type);
+    if (type === 'add') {
+        $('#adjustStockTitle').text('Ajouter au stock');
+    } else if (type === 'remove') {
+        $('#adjustStockTitle').text('Retirer du stock');
+    } else {
+        $('#adjustStockTitle').text('Ajuster le stock');
+    }
+    $('#adjustStockModal').modal('show');
+}
+
+$('#adjustStockForm').on('submit', function(e) {
+    e.preventDefault();
+    
+    var type = $('#adjustType').val();
+    var quantity = parseInt($('#adjustQuantity').val());
+    var reason = $('#adjustReason').val();
+    
+    // Simuler l'ajustement (vous devrez implémenter l'API côté serveur)
+    $.ajax({
+        url: '/stock/api/adjust/{{ item.id }}',
+        type: 'POST',
+        data: {
+            type: type,
+            quantity: quantity,
+            reason: reason
+        },
+        success: function(response) {
+            if (response.success) {
+                showToast('success', 'Stock ajusté avec succès');
+                location.reload();
+            } else {
+                showToast('error', response.message || 'Erreur lors de l\'ajustement');
+            }
+        },
+        error: function() {
+            showToast('error', 'Erreur réseau');
+        }
+    });
+    
+    $('#adjustStockModal').modal('hide');
+});
+</script>
+{% endblock %}

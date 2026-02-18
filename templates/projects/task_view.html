@@ -1,0 +1,619 @@
+{% extends "base.html" %}
+
+{% block title %}Tâche - {{ task.name }} - {{ super() }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Fix critique pour les boutons */
+    .btn {
+        position: relative;
+        z-index: 10;
+        cursor: pointer !important;
+        pointer-events: auto !important;
+    }
+    
+    /* Fix pour les formulaires en ligne */
+    form.d-inline {
+        display: inline-block !important;
+    }
+    
+    /* Empêcher les overlays de bloquer les clics */
+    .card::before {
+        pointer-events: none !important;
+    }
+    
+    /* S'assurer que les icônes ne bloquent pas */
+    .btn i {
+        pointer-events: none;
+    }
+    
+    /* Header fix */
+    .page-header {
+        position: relative;
+        z-index: 5;
+    }
+    
+    .page-header .btn,
+    .page-header form,
+    .page-header a {
+        position: relative;
+        z-index: 10;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    
+    <!-- HEADER -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <!-- Titre -->
+                <h2 class="mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-card-checklist text-primary"></i>
+                    <span>{{ task.name }}</span>
+                </h2>
+                
+                <!-- BOUTONS D'ACTION -->
+                <div class="d-flex flex-wrap gap-2">
+                    
+                    <!-- Retour -->
+                    <a href="{{ url_for('projects.view', project_id=task.project.id) }}" 
+                       class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i>
+                        <span class="d-none d-md-inline ms-1">Retour</span>
+                    </a>
+                    
+                    {% if task.status != 'completed' and task.status != 'cancelled' %}
+                        
+                        <!-- Valider -->
+                        <form method="POST" 
+                              action="{{ url_for('projects.validate_task', task_id=task.id) }}" 
+                              class="d-inline m-0 p-0">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" 
+                                    class="btn btn-success"
+                                    onclick="return confirm('Valider cette tâche comme terminée ?')">
+                                <i class="bi bi-check-circle"></i>
+                                <span class="d-none d-md-inline ms-1">Valider</span>
+                            </button>
+                        </form>
+                        
+                        <!-- Erreur -->
+                        <button type="button" 
+                                class="btn btn-warning"
+                                data-bs-toggle="modal" 
+                                data-bs-target="#errorModal">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <span class="d-none d-md-inline ms-1">Erreur</span>
+                        </button>
+                        
+                    {% endif %}
+                    
+                    {% if task.status == 'completed' %}
+                        
+                        <!-- Invalider -->
+                        <a href="{{ url_for('projects.invalidate_task', task_id=task.id) }}" 
+                           class="btn btn-danger"
+                           onclick="return confirm('Invalider cette tâche ?')">
+                            <i class="bi bi-x-circle"></i>
+                            <span class="d-none d-md-inline ms-1">Invalider</span>
+                        </a>
+                        
+                    {% endif %}
+                    
+                    {% if current_user.has_permission('tasks', 'update') %}
+                        
+                        <!-- Modifier -->
+                        <a href="{{ url_for('projects.edit_task', task_id=task.id) }}" 
+                           class="btn btn-warning">
+                            <i class="bi bi-pencil"></i>
+                            <span class="d-none d-md-inline ms-1">Modifier</span>
+                        </a>
+                        
+                    {% endif %}
+                    
+                    {% if current_user.has_permission('tasks', 'delete') %}
+                        
+                        <!-- Supprimer -->
+                        <form method="POST" 
+                              action="{{ url_for('projects.delete_task', task_id=task.id) }}" 
+                              class="d-inline m-0 p-0">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" 
+                                    class="btn btn-danger"
+                                    onclick="return confirm('Supprimer définitivement cette tâche ?')">
+                                <i class="bi bi-trash"></i>
+                                <span class="d-none d-md-inline ms-1">Supprimer</span>
+                            </button>
+                        </form>
+                        
+                    {% endif %}
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ERREUR -->
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="errorModalLabel">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Terminer avec erreur
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST" action="{{ url_for('projects.complete_with_error', task_id=task.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="error_description" class="form-label fw-bold">
+                                Description de l'erreur / justificatif *
+                            </label>
+                            <textarea class="form-control" 
+                                      id="error_description"
+                                      name="error_description" 
+                                      rows="4" 
+                                      placeholder="Décrivez l'erreur ou le problème rencontré..." 
+                                      required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="additional_time" class="form-label">
+                                Temps supplémentaire nécessaire
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="additional_time"
+                                   name="additional_time_needed"
+                                   placeholder="Ex: 2 jours, 1 semaine...">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-lg me-1"></i>Annuler
+                        </button>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-check-lg me-1"></i>Confirmer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTENU PRINCIPAL -->
+    <div class="row g-4">
+        
+        <!-- COLONNE GAUCHE -->
+        <div class="col-lg-8">
+            
+            <!-- Informations -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-info-circle text-primary me-2"></i>
+                            Informations de la tâche
+                        </h5>
+                        <div class="d-flex gap-2">
+                            {% if task.priority == 'high' %}
+                                <span class="badge bg-danger">Haute priorité</span>
+                            {% elif task.priority == 'medium' %}
+                                <span class="badge bg-warning text-dark">Moyenne</span>
+                            {% else %}
+                                <span class="badge bg-success">Basse</span>
+                            {% endif %}
+                            
+                            {% if task.status == 'pending' %}
+                                <span class="badge bg-secondary">En attente</span>
+                            {% elif task.status == 'planning' %}
+                                <span class="badge bg-info">Planification</span>
+                            {% elif task.status == 'in_progress' %}
+                                <span class="badge bg-primary">En cours</span>
+                            {% elif task.status == 'completed' %}
+                                <span class="badge bg-success">Terminée</span>
+                            {% else %}
+                                <span class="badge bg-dark">Annulée</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if task.description %}
+                        <p class="lead">{{ task.description }}</p>
+                        <hr>
+                    {% endif %}
+                    
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded">
+                                <small class="text-muted d-block">Date de début</small>
+                                <strong>{{ task.start_date.strftime('%d/%m/%Y') }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded">
+                                <small class="text-muted d-block">Date de fin prévue</small>
+                                <strong>{{ task.end_date.strftime('%d/%m/%Y') }}</strong>
+                            </div>
+                        </div>
+                        {% if task.actual_end_date %}
+                        <div class="col-12">
+                            <div class="p-3 bg-success bg-opacity-10 rounded border border-success">
+                                <small class="text-success d-block">Date de fin réelle</small>
+                                <strong class="text-success">{{ task.actual_end_date.strftime('%d/%m/%Y') }}</strong>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Type de tâche</small>
+                            <strong>{{ task.task_type_ref.name if task.task_type_ref else 'Non spécifié' }}</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Projet</small>
+                            <a href="{{ url_for('projects.view', project_id=task.project.id) }}" class="text-decoration-none">
+                                {{ task.project.name }}
+                            </a>
+                        </div>
+                    </div>
+                    
+                    {% if task.justification %}
+                        <div class="alert alert-info">
+                            <small class="text-muted d-block fw-bold">Justification</small>
+                            {{ task.justification }}
+                        </div>
+                    {% endif %}
+                    
+                    {% if task.notes %}
+                        <div class="alert alert-secondary">
+                            <small class="text-muted d-block fw-bold">Notes</small>
+                            {{ task.notes }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Matériaux -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-box-seam text-primary me-2"></i>
+                            Matériaux
+                        </h5>
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('projects.task_materials', task_id=task.id) }}" 
+                               class="btn btn-primary btn-sm">
+                                <i class="bi bi-gear"></i>
+                                <span class="d-none d-sm-inline ms-1">Gérer</span>
+                            </a>
+                            {% if task.use_stock and task.status == 'in_progress' %}
+                                <button type="button" 
+                                        class="btn btn-success btn-sm"
+                                        onclick="useStock()">
+                                    <i class="bi bi-cart-check"></i>
+                                    <span class="d-none d-sm-inline ms-1">Utiliser stock</span>
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-{{ 'info' if task.use_stock else 'secondary' }} d-flex align-items-center">
+                        <i class="bi bi-{{ 'check-circle' if task.use_stock else 'x-circle' }} fs-4 me-3"></i>
+                        <div>
+                            Cette tâche <strong>{% if task.use_stock %}utilise{% else %}n'utilise pas{% endif %}</strong> le stock.
+                        </div>
+                    </div>
+                    
+                    {% if stock_items_count > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Matériau</th>
+                                        <th class="text-center">Qté estimée</th>
+                                        <th class="text-center">Unité</th>
+                                        <th class="text-center">Stock</th>
+                                        <th class="text-center">Utilisé</th>
+                                        <th class="text-center">Reste</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in stock_items %}
+                                    <tr class="{{ 'table-warning' if not item.is_quantity_sufficient() else '' }}">
+                                        <td>
+                                            <a href="{{ url_for('stock.view', item_id=item.stock_item.id) }}" class="text-decoration-none">
+                                                {{ item.stock_item.libelle }}
+                                                <small class="text-muted d-block">{{ item.stock_item.reference }}</small>
+                                            </a>
+                                        </td>
+                                        <td class="text-center">{{ item.estimated_quantity }}</td>
+                                        <td class="text-center">{{ item.unit_type }}</td>
+                                        <td class="text-center">
+                                            {% if item.is_quantity_sufficient() %}
+                                                <span class="badge bg-success"><i class="bi bi-check"></i></span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark" title="Manque {{ item.get_shortage_quantity() }}">
+                                                    <i class="bi bi-exclamation-triangle"></i>
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">{{ item.actual_quantity_used|default('-') }}</td>
+                                        <td class="text-center">
+                                            {% if item.return_to_stock %}
+                                                {{ item.remaining_quantity|default(0) }}
+                                            {% else %}
+                                                <span class="badge bg-secondary">Non retourné</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        {% if shortage_items %}
+                            <div class="alert alert-warning mt-3">
+                                <h6 class="alert-heading">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                    Alertes de stock
+                                </h6>
+                                <p class="mb-2">Les matériaux suivants ne sont pas disponibles en quantité suffisante :</p>
+                                <ul class="mb-0 list-unstyled">
+                                    {% for item in shortage_items %}
+                                    <li class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                                        <span><strong>{{ item.stock_item.libelle }}</strong></span>
+                                        <small class="text-muted">
+                                            Besoin: {{ item.estimated_quantity }} {{ item.unit_type }} | 
+                                            Dispo: {{ item.stock_item.quantity|default(0) }} {{ item.stock_item.unit|default('pièce') }}
+                                        </small>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-muted text-center py-4 mb-0">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            Aucun matériau assigné à cette tâche
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Coûts supplémentaires -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-cash text-primary me-2"></i>
+                            Coûts supplémentaires
+                        </h5>
+                        {% if current_user.has_permission('tasks', 'update') %}
+                            <a href="{{ url_for('projects.manage_additional_costs', task_id=task.id) }}" 
+                               class="btn btn-primary btn-sm">
+                                <i class="bi bi-plus-lg"></i>
+                                <span class="d-none d-sm-inline ms-1">Ajouter</span>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if additional_costs_count > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Nom</th>
+                                        <th class="text-end">Montant</th>
+                                        <th class="text-center">Date</th>
+                                        <th>Justification</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cost in additional_costs %}
+                                    <tr>
+                                        <td>{{ cost.name }}</td>
+                                        <td class="text-end fw-bold">{{ cost.amount|format_currency }}</td>
+                                        <td class="text-center">{{ cost.date.strftime('%d/%m/%Y') }}</td>
+                                        <td>{{ cost.justification|default('-', true) }}</td>
+                                        <td class="text-center">
+                                            {% if current_user.has_permission('tasks', 'delete') %}
+                                                <form method="POST" 
+                                                      action="{{ url_for('projects.delete_additional_cost', cost_id=cost.id) }}" 
+                                                      class="d-inline m-0"
+                                                      onsubmit="return confirm('Supprimer ce coût ?')">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center py-4 mb-0">
+                            <i class="bi bi-receipt fs-1 d-block mb-2"></i>
+                            Aucun coût supplémentaire
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- COLONNE DROITE -->
+        <div class="col-lg-4">
+            
+            <!-- Assignation -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-people text-primary me-2"></i>
+                        Assignation
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Personnel -->
+                    <h6 class="text-muted text-uppercase small fw-bold mb-3">Personnel assigné</h6>
+                    {% if assigned_personnel_count > 0 %}
+                        <div class="list-group list-group-flush mb-4">
+                            {% for person in assigned_personnel %}
+                            <a href="{{ url_for('personnel.view', personnel_id=person.id) }}" 
+                               class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-0">
+                                <div>
+                                    <div class="fw-bold">{{ person.get_full_name() }}</div>
+                                    <small class="text-muted">{{ person.position|default('') }}</small>
+                                </div>
+                                <span class="badge bg-primary rounded-pill">{{ person.employee_id }}</span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Aucun personnel assigné</p>
+                    {% endif %}
+                    
+                    <!-- Groupes -->
+                    <h6 class="text-muted text-uppercase small fw-bold mb-3">Groupes assignés</h6>
+                    {% if assigned_groups_count > 0 %}
+                        <div class="list-group list-group-flush">
+                            {% for group in assigned_groups %}
+                            <a href="{{ url_for('groups.view', group_id=group.id) }}" 
+                               class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-0">
+                                <div>
+                                    <div class="fw-bold">{{ group.name }}</div>
+                                    <small class="text-muted">{{ group.description|default('') }}</small>
+                                </div>
+                                <span class="badge bg-warning text-dark rounded-pill">
+                                    {{ group.members|length }} membre{{ 's' if group.members|length > 1 else '' }}
+                                </span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Aucun groupe assigné</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Coût -->
+            <div class="card mb-4 shadow-sm border-success">
+                <div class="card-header bg-success bg-opacity-10 border-success">
+                    <h5 class="card-title mb-0 text-success">
+                        <i class="bi bi-currency-euro me-2"></i>
+                        Coût total
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <h2 class="display-5 fw-bold text-success mb-0">{{ task_cost|format_currency }}</h2>
+                    <hr>
+                    <div class="d-flex justify-content-between small">
+                        <span class="text-muted">Matériaux:</span>
+                        <span class="fw-bold">{{ stock_items_cost|format_currency }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between small mt-2">
+                        <span class="text-muted">Coûts supp.:</span>
+                        <span class="fw-bold">{{ additional_costs_total|format_currency }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historique -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-clock-history text-primary me-2"></i>
+                        Historique
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Créé le</small>
+                        <strong>{{ task.created_at.strftime('%d/%m/%Y à %H:%M') }}</strong>
+                    </div>
+                    <div>
+                        <small class="text-muted d-block">Dernière modification</small>
+                        <strong>{{ task.updated_at.strftime('%d/%m/%Y à %H:%M') if task.updated_at else 'Jamais modifié' }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function useStock() {
+    if (!confirm('Êtes-vous sûr de vouloir utiliser le stock pour cette tâche ?\nCette action est irréversible.')) {
+        return;
+    }
+    
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="bi bi-hourglass-split"></i> Traitement...';
+    
+    fetch('{{ url_for("projects.use_stock", task_id=task.id) }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Notification succès
+            const toast = document.createElement('div');
+            toast.className = 'alert alert-success position-fixed top-0 end-0 m-3 shadow';
+            toast.style.zIndex = '9999';
+            toast.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Stock utilisé avec succès !';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+            
+            location.reload();
+        } else {
+            button.disabled = false;
+            button.innerHTML = originalText;
+            
+            if (data.insufficient_items) {
+                let message = 'Stock insuffisant pour :\n\n';
+                data.insufficient_items.forEach(item => {
+                    message += `• ${item.name}\n  Besoin: ${item.needed}\n  Disponible: ${item.available}\n\n`;
+                });
+                alert(message);
+            } else {
+                alert('Erreur: ' + (data.error || 'Une erreur est survenue'));
+            }
+        }
+    })
+    .catch(error => {
+        button.disabled = false;
+        button.innerHTML = originalText;
+        alert('Erreur de connexion: ' + error.message);
+    });
+}
+
+// Debug: vérifier que les boutons sont cliquables
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            console.log('✓ Bouton cliqué:', this.textContent.trim());
+        });
+    });
+});
+</script>
+{% endblock %}

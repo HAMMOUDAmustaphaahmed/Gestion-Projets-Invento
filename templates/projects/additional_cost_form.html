@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Ajouter un frais supplémentaire - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-6 mx-auto">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-cash"></i> Ajouter un frais supplémentaire
+                    </h4>
+                    <a href="{{ url_for('projects.view_task', task_id=task.id) }}" 
+                       class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Retour à la tâche
+                    </a>
+                </div>
+                <div class="card-body">
+                    <!-- Info sur la tâche -->
+                    <div class="alert alert-info mb-4">
+                        <h6 class="mb-1"><i class="bi bi-info-circle"></i> Tâche concernée</h6>
+                        <p class="mb-0">
+                            <strong>{{ task.name }}</strong><br>
+                            <small class="text-muted">
+                                Projet: {{ task.project.name }}
+                            </small>
+                        </p>
+                    </div>
+
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Nom du frais -->
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control" ~ (" is-invalid" if form.name.errors else ""), 
+                                         placeholder="Ex: Transport, Hébergement, Équipement spécial...") }}
+                            {% if form.name.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.name.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Montant -->
+                        <div class="mb-3">
+                            {{ form.amount.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.amount(class="form-control" ~ (" is-invalid" if form.amount.errors else ""), 
+                                               placeholder="0.00") }}
+                                <span class="input-group-text">€</span>
+                            </div>
+                            {% if form.amount.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.amount.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Date -->
+                        <div class="mb-3">
+                            {{ form.date.label(class="form-label") }}
+                            {{ form.date(class="form-control" ~ (" is-invalid" if form.date.errors else "")) }}
+                            {% if form.date.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.date.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">Date du frais (par défaut: aujourd'hui)</small>
+                        </div>
+
+                        <!-- Justification -->
+                        <div class="mb-3">
+                            {{ form.justification.label(class="form-label") }}
+                            {{ form.justification(class="form-control" ~ (" is-invalid" if form.justification.errors else ""), 
+                                                  rows="4",
+                                                  placeholder="Expliquez la raison de ce frais supplémentaire...") }}
+                            {% if form.justification.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.justification.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Décrivez l'origine et la nécessité de ce frais
+                            </small>
+                        </div>
+
+                        <!-- Boutons -->
+                        <div class="d-flex justify-content-between align-items-center mt-4">
+                            <a href="{{ url_for('projects.view_task', task_id=task.id) }}" 
+                               class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Annuler
+                            </a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Aide -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Exemples de frais supplémentaires</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>Frais de transport ou de livraison</li>
+                        <li>Location d'équipement spécialisé</li>
+                        <li>Frais d'hébergement pour déplacement</li>
+                        <li>Sous-traitance externe</li>
+                        <li>Matériel consommable non stocké</li>
+                        <li>Formations ou certifications requises</li>
+                        <li>Assurances ou garanties supplémentaires</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-focus sur le champ nom
+    const nameInput = document.querySelector('input[name="name"]');
+    if (nameInput) {
+        nameInput.focus();
+    }
+    
+    // Validation du montant
+    const amountInput = document.querySelector('input[name="amount"]');
+    if (amountInput) {
+        amountInput.addEventListener('input', function(e) {
+            // Autoriser seulement les nombres et un point décimal
+            let value = e.target.value;
+            value = value.replace(/[^0-9.]/g, '');
+            
+            // Autoriser seulement un point décimal
+            const parts = value.split('.');
+            if (parts.length > 2) {
+                value = parts[0] + '.' + parts.slice(1).join('');
+            }
+            
+            // Limiter à 2 décimales
+            if (parts.length === 2 && parts[1].length > 2) {
+                value = parts[0] + '.' + parts[1].substring(0, 2);
+            }
+            
+            e.target.value = value;
+        });
+    }
+});
+</script>
+{% endblock %}

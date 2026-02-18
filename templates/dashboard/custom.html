@@ -1,0 +1,1084 @@
+{% extends "base.html" %}
+
+{% block title %}Personnalisation du Tableau de Bord - {{ app_name }}{% endblock %}
+
+{% block page_title %}Personnalisation du Tableau de Bord{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Retour au Dashboard
+    </a>
+    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addChartModal">
+        <i class="bi bi-plus-circle"></i> Ajouter un Graphique
+    </button>
+    <button type="button" class="btn btn-outline-success" id="saveLayoutBtn">
+        <i class="bi bi-save"></i> Sauvegarder
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-3">
+        <!-- Sidebar pour la personnalisation -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Configuration</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h6 class="mb-2">Disposition</h6>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="gridLayout" checked>
+                        <label class="form-check-label" for="gridLayout">Grille modifiable</label>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="widgetAnimation" checked>
+                        <label class="form-check-label" for="widgetAnimation">Animations</label>
+                    </div>
+                    <button class="btn btn-sm btn-outline-secondary w-100" id="resetLayoutBtn">
+                        <i class="bi bi-arrow-clockwise"></i> Réinitialiser la disposition
+                    </button>
+                </div>
+                
+                <div class="mb-4">
+                    <h6 class="mb-2">Filtres par défaut</h6>
+                    <div class="mb-3">
+                        <label for="defaultDateRange" class="form-label">Période par défaut</label>
+                        <select class="form-select form-select-sm" id="defaultDateRange">
+                            <option value="today">Aujourd'hui</option>
+                            <option value="week" selected>Cette semaine</option>
+                            <option value="month">Ce mois</option>
+                            <option value="quarter">Ce trimestre</option>
+                            <option value="year">Cette année</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="refreshInterval" class="form-label">Actualisation auto</label>
+                        <select class="form-select form-select-sm" id="refreshInterval">
+                            <option value="0">Désactivé</option>
+                            <option value="30000">30 secondes</option>
+                            <option value="60000">1 minute</option>
+                            <option value="300000" selected>5 minutes</option>
+                            <option value="900000">15 minutes</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <h6 class="mb-2">Graphiques disponibles</h6>
+                    <div id="availableCharts" class="list-group list-group-flush">
+                        <!-- Charts will be loaded via JavaScript -->
+                        <div class="list-group-item text-center py-3">
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                            <span class="ms-2">Chargement...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Widgets disponibles -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">Widgets disponibles</h6>
+            </div>
+            <div class="card-body">
+                <div class="draggable-widgets">
+                    <div class="widget-item draggable mb-2" data-widget-type="stats" draggable="true">
+                        <div class="d-flex align-items-center p-2 border rounded">
+                            <i class="bi bi-bar-chart me-2"></i>
+                            <span>Statistiques rapides</span>
+                        </div>
+                    </div>
+                    <div class="widget-item draggable mb-2" data-widget-type="activities" draggable="true">
+                        <div class="d-flex align-items-center p-2 border rounded">
+                            <i class="bi bi-activity me-2"></i>
+                            <span>Activités récentes</span>
+                        </div>
+                    </div>
+                    <div class="widget-item draggable mb-2" data-widget-type="upcoming" draggable="true">
+                        <div class="d-flex align-items-center p-2 border rounded">
+                            <i class="bi bi-calendar-check me-2"></i>
+                            <span>Tâches à venir</span>
+                        </div>
+                    </div>
+                    <div class="widget-item draggable mb-2" data-widget-type="alerts" draggable="true">
+                        <div class="d-flex align-items-center p-2 border rounded">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <span>Alertes stock</span>
+                        </div>
+                    </div>
+                </div>
+                <small class="text-muted d-block mt-2">Glissez-déposez sur le dashboard pour ajouter</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-9">
+        <!-- Zone de prévisualisation du dashboard -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Prévisualisation du Dashboard</h6>
+                <div>
+                    <span class="badge bg-info me-2" id="widgetCount">0 widgets</span>
+                    <button class="btn btn-sm btn-outline-secondary" id="toggleGrid">
+                        <i class="bi bi-grid"></i> Grille
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Zone de dépôt pour les widgets -->
+                <div id="dashboardPreview" class="dashboard-grid">
+                    <div class="grid-placeholder text-center py-5">
+                        <i class="bi bi-layout-split display-1 text-muted"></i>
+                        <h4 class="mt-3">Dashboard vide</h4>
+                        <p class="text-muted">Glissez des widgets depuis la colonne de gauche ou ajoutez un graphique</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Liste des graphiques configurés -->
+        <div class="card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Mes Graphiques</h6>
+                <div>
+                    <span class="badge bg-secondary" id="chartCount">{{ charts|length }} graphique(s)</span>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if charts %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th style="width: 30px;"></th>
+                                <th>Nom</th>
+                                <th>Type</th>
+                                <th>Source de données</th>
+                                <th>Statut</th>
+                                <th>Position</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="chartsList">
+                            {% for chart in charts %}
+                            <tr data-chart-id="{{ chart.id }}" class="chart-row">
+                                <td class="drag-handle" style="cursor: move;">
+                                    <i class="bi bi-grip-vertical text-muted"></i>
+                                </td>
+                                <td>
+                                    <div class="fw-bold">{{ chart.title }}</div>
+                                    <small class="text-muted">ID: {{ chart.id }}</small>
+                                </td>
+                                <td>
+                                    {% if chart.chart_type == 'bar' %}
+                                        <span class="badge bg-info">Barres</span>
+                                    {% elif chart.chart_type == 'line' %}
+                                        <span class="badge bg-primary">Lignes</span>
+                                    {% elif chart.chart_type == 'pie' %}
+                                        <span class="badge bg-success">Camembert</span>
+                                    {% elif chart.chart_type == 'doughnut' %}
+                                        <span class="badge bg-warning">Anneau</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ chart.chart_type }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if chart.data_source == 'stock' %}
+                                        Stock
+                                    {% elif chart.data_source == 'projects' %}
+                                        Projets
+                                    {% elif chart.data_source == 'tasks' %}
+                                        Tâches
+                                    {% elif chart.data_source == 'personnel' %}
+                                        Personnel
+                                    {% else %}
+                                        {{ chart.data_source }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if chart.is_active %}
+                                    <span class="badge bg-success">Actif</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Inactif</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-secondary move-up" title="Monter">
+                                            <i class="bi bi-arrow-up"></i>
+                                        </button>
+                                        <button class="btn btn-outline-secondary move-down" title="Descendre">
+                                            <i class="bi bi-arrow-down"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary edit-chart" title="Modifier">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-outline-{% if chart.is_active %}warning{% else %}success{% endif %} toggle-chart" title="{% if chart.is_active %}Désactiver{% else %}Activer{% endif %}">
+                                            <i class="bi bi-eye{% if not chart.is_active %}-slash{% endif %}"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger delete-chart" title="Supprimer">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-pie-chart display-1 text-muted"></i>
+                    <h4 class="mt-3">Aucun graphique configuré</h4>
+                    <p class="text-muted mb-4">
+                        Commencez par ajouter votre premier graphique pour personnaliser votre dashboard.
+                    </p>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addChartModal">
+                        <i class="bi bi-plus-circle"></i> Créer un graphique
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour ajouter un graphique -->
+<div class="modal fade" id="addChartModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ajouter un nouveau graphique</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="chartForm" action="{{ url_for('dashboard.add_chart') }}" method="POST">
+                {{ form.hidden_tag() }}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Titre du graphique*</label>
+                                {{ form.title(class="form-control", placeholder="Ex: Évolution du stock") }}
+                                {% if form.title.errors %}
+                                <div class="text-danger">{{ form.title.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="chart_type" class="form-label">Type de graphique*</label>
+                                {{ form.chart_type(class="form-select") }}
+                                {% if form.chart_type.errors %}
+                                <div class="text-danger">{{ form.chart_type.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="data_source" class="form-label">Source de données*</label>
+                                {{ form.data_source(class="form-select") }}
+                                {% if form.data_source.errors %}
+                                <div class="text-danger">{{ form.data_source.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="width" class="form-label">Largeur (colonnes)</label>
+                                {{ form.width(class="form-control", type="number", min="1", max="12", value="6") }}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="height" class="form-label">Hauteur (px)</label>
+                                {{ form.height(class="form-control", type="number", min="100", max="800", value="300") }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Prévisualisation dynamique -->
+                    <div class="mb-3">
+                        <label class="form-label">Aperçu</label>
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span id="previewTitle">Titre du graphique</span>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-outline-secondary">
+                                            <i class="bi bi-arrow-clockwise"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary">
+                                            <i class="bi bi-gear"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body text-center" style="height: 200px; background-color: #f8f9fa;">
+                                <div id="chartPreview" class="d-flex flex-column align-items-center justify-content-center h-100">
+                                    <i class="bi bi-pie-chart display-1 text-muted mb-2"></i>
+                                    <span class="text-muted">Prévisualisation</span>
+                                    <small class="text-muted" id="previewType">Type: Barres</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="add_to_dashboard" id="add_to_dashboard" checked>
+                        <label class="form-check-label" for="add_to_dashboard">
+                            Ajouter directement au dashboard
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Créer le graphique</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation pour suppression -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmer la suppression</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer ce graphique ? Cette action est irréversible.</p>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Le graphique sera définitivement supprimé de votre dashboard.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Supprimer définitivement</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.dashboard-grid {
+    min-height: 400px;
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.grid-placeholder {
+    color: #6c757d;
+}
+
+.widget-placeholder {
+    background-color: #f8f9fa;
+    border: 2px dashed #adb5bd;
+    border-radius: 6px;
+    min-height: 100px;
+    margin-bottom: 15px;
+}
+
+.widget-item {
+    cursor: move;
+}
+
+.widget-item:hover {
+    background-color: #f8f9fa;
+}
+
+.chart-row:hover {
+    background-color: #f8f9fa;
+}
+
+.drag-handle {
+    cursor: move;
+}
+
+.draggable-widgets .widget-item {
+    cursor: grab;
+}
+
+.draggable-widgets .widget-item:active {
+    cursor: grabbing;
+}
+
+#dashboardPreview {
+    position: relative;
+}
+
+#dashboardPreview .widget {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    background: white;
+    position: relative;
+}
+
+.widget-header {
+    padding: 10px 15px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    cursor: move;
+    border-radius: 8px 8px 0 0;
+}
+
+.widget-actions {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+}
+
+.widget-actions .btn {
+    padding: 2px 5px;
+    font-size: 0.8rem;
+}
+
+.widget-content {
+    padding: 15px;
+}
+
+/* Style pour la grille */
+.grid-enabled {
+    background-image: linear-gradient(to right, #f8f9fa 1px, transparent 1px),
+                      linear-gradient(to bottom, #f8f9fa 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+/* Animation pour le drag and drop */
+@keyframes pulse {
+    0% { background-color: #f8f9fa; }
+    50% { background-color: #e9ecef; }
+    100% { background-color: #f8f9fa; }
+}
+
+.drag-over {
+    animation: pulse 1s infinite;
+}
+
+/* Style pour les chart previews */
+.chart-preview-canvas {
+    max-height: 150px;
+    width: 100% !important;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialiser les compteurs
+    updateChartCount();
+    updateWidgetCount();
+    
+    // Initialiser le drag and drop pour les widgets
+    initializeDragAndDrop();
+    
+    // Initialiser le tri des graphiques
+    initializeChartsSortable();
+    
+    // Mettre à jour la prévisualisation du formulaire
+    $('#title, #chart_type').on('input change', function() {
+        updateChartPreview();
+    });
+    
+    // Gérer la soumission du formulaire de création de graphique
+    $('#chartForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        $.ajax({
+            url: $(this).attr('action'),
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function(response) {
+                if (response.success || response.id) {
+                    $('#addChartModal').modal('hide');
+                    showToast('success', 'Graphique créé avec succès !');
+                    
+                    // Recharger la page après un court délai
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showToast('error', 'Erreur lors de la création du graphique.');
+                }
+            },
+            error: function(xhr) {
+                let errorMsg = 'Erreur lors de la création du graphique.';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMsg = xhr.responseJSON.error;
+                }
+                showToast('error', errorMsg);
+            }
+        });
+    });
+    
+    // Gérer l'activation/désactivation des graphiques
+    $('.toggle-chart').on('click', function() {
+        const chartId = $(this).closest('tr').data('chart-id');
+        const button = $(this);
+        const isActive = button.find('i').hasClass('bi-eye');
+        
+        $.ajax({
+            url: `/dashboard/charts/${chartId}/toggle`,
+            type: 'POST',
+            data: {
+                csrf_token: $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                if (response.success) {
+                    const newStatus = response.is_active;
+                    
+                    // Mettre à jour l'icône et la classe du bouton
+                    const icon = button.find('i');
+                    if (newStatus) {
+                        icon.removeClass('bi-eye-slash').addClass('bi-eye');
+                        button.removeClass('btn-outline-success').addClass('btn-outline-warning');
+                        button.attr('title', 'Désactiver');
+                    } else {
+                        icon.removeClass('bi-eye').addClass('bi-eye-slash');
+                        button.removeClass('btn-outline-warning').addClass('btn-outline-success');
+                        button.attr('title', 'Activer');
+                    }
+                    
+                    // Mettre à jour le badge de statut
+                    const statusBadge = button.closest('tr').find('.badge');
+                    if (newStatus) {
+                        statusBadge.removeClass('bg-secondary').addClass('bg-success').text('Actif');
+                    } else {
+                        statusBadge.removeClass('bg-success').addClass('bg-secondary').text('Inactif');
+                    }
+                    
+                    showToast('success', 'Statut du graphique mis à jour.');
+                }
+            }
+        });
+    });
+    
+    // Gérer la suppression des graphiques
+    $('.delete-chart').on('click', function() {
+        const chartId = $(this).closest('tr').data('chart-id');
+        const chartTitle = $(this).closest('tr').find('.fw-bold').text();
+        
+        // Stocker l'ID dans le modal de confirmation
+        $('#confirmDeleteBtn').data('chart-id', chartId);
+        $('#confirmDeleteModal .modal-body p').html(
+            `Êtes-vous sûr de vouloir supprimer le graphique <strong>"${chartTitle}"</strong> ?`
+        );
+        
+        $('#confirmDeleteModal').modal('show');
+    });
+    
+    // Confirmation de suppression
+    $('#confirmDeleteBtn').on('click', function() {
+        const chartId = $(this).data('chart-id');
+        
+        $.ajax({
+            url: `/dashboard/charts/${chartId}/delete`,
+            type: 'POST',
+            data: {
+                csrf_token: $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#confirmDeleteModal').modal('hide');
+                    
+                    // Supprimer la ligne du tableau
+                    $(`tr[data-chart-id="${chartId}"]`).remove();
+                    
+                    // Mettre à jour le compteur
+                    updateChartCount();
+                    
+                    showToast('success', 'Graphique supprimé avec succès.');
+                } else {
+                    showToast('error', response.message || 'Erreur lors de la suppression.');
+                }
+            }
+        });
+    });
+    
+    // Gérer l'édition des graphiques
+    $('.edit-chart').on('click', function() {
+        const chartId = $(this).closest('tr').data('chart-id');
+        window.location.href = `/dashboard/charts/${chartId}/edit`;
+    });
+    
+    // Monter/descendre les graphiques
+    $('.move-up').on('click', function() {
+        const row = $(this).closest('tr');
+        const prevRow = row.prev();
+        
+        if (prevRow.length) {
+            row.insertBefore(prevRow);
+            updateChartPositions();
+        }
+    });
+    
+    $('.move-down').on('click', function() {
+        const row = $(this).closest('tr');
+        const nextRow = row.next();
+        
+        if (nextRow.length) {
+            row.insertAfter(nextRow);
+            updateChartPositions();
+        }
+    });
+    
+    // Basculer l'affichage de la grille
+    $('#toggleGrid').on('click', function() {
+        $('#dashboardPreview').toggleClass('grid-enabled');
+        const icon = $(this).find('i');
+        if ($('#dashboardPreview').hasClass('grid-enabled')) {
+            icon.removeClass('bi-grid').addClass('bi-grid-3x3-gap-fill');
+        } else {
+            icon.removeClass('bi-grid-3x3-gap-fill').addClass('bi-grid');
+        }
+    });
+    
+    // Sauvegarder la disposition
+    $('#saveLayoutBtn').on('click', function() {
+        saveDashboardLayout();
+    });
+    
+    // Réinitialiser la disposition
+    $('#resetLayoutBtn').on('click', function() {
+        if (confirm('Êtes-vous sûr de vouloir réinitialiser la disposition du dashboard ?')) {
+            $.ajax({
+                url: '/dashboard/api/reset-layout',
+                type: 'POST',
+                data: {
+                    csrf_token: $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showToast('success', 'Disposition réinitialisée.');
+                        setTimeout(function() {
+                            location.reload();
+                        }, 1000);
+                    }
+                }
+            });
+        }
+    });
+});
+
+// Initialiser le drag and drop
+function initializeDragAndDrop() {
+    const dashboard = document.getElementById('dashboardPreview');
+    const widgets = document.querySelectorAll('.draggable');
+    
+    // Rendre les widgets draggables
+    widgets.forEach(widget => {
+        widget.addEventListener('dragstart', function(e) {
+            e.dataTransfer.setData('text/plain', this.dataset.widgetType);
+            this.classList.add('dragging');
+        });
+        
+        widget.addEventListener('dragend', function() {
+            this.classList.remove('dragging');
+        });
+    });
+    
+    // Gérer le drop sur le dashboard
+    dashboard.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.classList.add('drag-over');
+    });
+    
+    dashboard.addEventListener('dragleave', function() {
+        this.classList.remove('drag-over');
+    });
+    
+    dashboard.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+        
+        const widgetType = e.dataTransfer.getData('text/plain');
+        addWidgetToDashboard(widgetType);
+    });
+}
+
+// Ajouter un widget au dashboard
+function addWidgetToDashboard(widgetType) {
+    const dashboard = $('#dashboardPreview');
+    
+    // Supprimer le placeholder s'il existe
+    if (dashboard.find('.grid-placeholder').length) {
+        dashboard.find('.grid-placeholder').remove();
+    }
+    
+    let widgetHtml = '';
+    const widgetId = `widget-${Date.now()}`;
+    
+    switch(widgetType) {
+        case 'stats':
+            widgetHtml = `
+                <div class="col-md-6 widget" id="${widgetId}" data-widget-type="stats">
+                    <div class="card h-100">
+                        <div class="card-header widget-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">Statistiques rapides</h6>
+                            <div class="widget-actions">
+                                <button class="btn btn-sm btn-outline-secondary" onclick="refreshWidget('${widgetId}')">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="removeWidget('${widgetId}')">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body widget-content">
+                            <div class="row stats-container">
+                                <div class="col-6 mb-3">
+                                    <div class="text-center">
+                                        <div class="fs-4 fw-bold">--</div>
+                                        <small class="text-muted">Total Stock</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <div class="text-center">
+                                        <div class="fs-4 fw-bold">--</div>
+                                        <small class="text-muted">Alertes</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'activities':
+            widgetHtml = `
+                <div class="col-md-6 widget" id="${widgetId}" data-widget-type="activities">
+                    <div class="card h-100">
+                        <div class="card-header widget-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">Activités récentes</h6>
+                            <div class="widget-actions">
+                                <button class="btn btn-sm btn-outline-secondary" onclick="refreshWidget('${widgetId}')">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="removeWidget('${widgetId}')">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body widget-content">
+                            <div class="activities-container">
+                                <div class="text-center text-muted py-3">
+                                    <i class="bi bi-activity"></i>
+                                    <p class="mt-2">Chargement des activités...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'upcoming':
+            widgetHtml = `
+                <div class="col-md-6 widget" id="${widgetId}" data-widget-type="upcoming">
+                    <div class="card h-100">
+                        <div class="card-header widget-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">Tâches à venir</h6>
+                            <div class="widget-actions">
+                                <button class="btn btn-sm btn-outline-secondary" onclick="refreshWidget('${widgetId}')">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="removeWidget('${widgetId}')">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body widget-content">
+                            <div class="upcoming-container">
+                                <div class="text-center text-muted py-3">
+                                    <i class="bi bi-calendar-check"></i>
+                                    <p class="mt-2">Chargement des tâches...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'alerts':
+            widgetHtml = `
+                <div class="col-md-6 widget" id="${widgetId}" data-widget-type="alerts">
+                    <div class="card h-100">
+                        <div class="card-header widget-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">Alertes Stock</h6>
+                            <div class="widget-actions">
+                                <button class="btn btn-sm btn-outline-secondary" onclick="refreshWidget('${widgetId}')">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="removeWidget('${widgetId}')">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body widget-content">
+                            <div class="alerts-container">
+                                <div class="text-center text-muted py-3">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    <p class="mt-2">Chargement des alertes...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            break;
+    }
+    
+    dashboard.append(widgetHtml);
+    updateWidgetCount();
+    
+    // Charger les données du widget
+    loadWidgetData(widgetId);
+}
+
+// Initialiser le tri des graphiques
+function initializeChartsSortable() {
+    if ($('#chartsList').length && typeof Sortable !== 'undefined') {
+        new Sortable(document.getElementById('chartsList'), {
+            handle: '.drag-handle',
+            animation: 150,
+            onEnd: function() {
+                updateChartPositions();
+            }
+        });
+    }
+}
+
+// Mettre à jour les positions des graphiques
+function updateChartPositions() {
+    const chartIds = [];
+    $('#chartsList tr').each(function() {
+        chartIds.push($(this).data('chart-id'));
+    });
+    
+    $.ajax({
+        url: '/dashboard/charts/update-order',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ order: chartIds }),
+        headers: {
+            'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
+        },
+        success: function(response) {
+            if (response.success) {
+                showToast('success', 'Ordre des graphiques mis à jour.');
+            }
+        }
+    });
+}
+
+// Sauvegarder la disposition du dashboard
+function saveDashboardLayout() {
+    const layout = [];
+    $('#dashboardPreview .widget').each(function() {
+        layout.push({
+            id: this.id,
+            type: $(this).data('widget-type'),
+            col: $(this).hasClass('col-md-6') ? 6 : 12
+        });
+    });
+    
+    $.ajax({
+        url: '/dashboard/api/save-layout',
+        type: 'POST',
+        data: {
+            layout: JSON.stringify(layout),
+            csrf_token: $('meta[name="csrf-token"]').attr('content')
+        },
+        success: function(response) {
+            if (response.success) {
+                showToast('success', 'Disposition sauvegardée !');
+            }
+        }
+    });
+}
+
+// Mettre à jour le compteur de graphiques
+function updateChartCount() {
+    const count = $('#chartsList tr').length;
+    $('#chartCount').text(`${count} graphique(s)`);
+}
+
+// Mettre à jour le compteur de widgets
+function updateWidgetCount() {
+    const count = $('#dashboardPreview .widget').length;
+    $('#widgetCount').text(`${count} widget(s)`);
+}
+
+// Rafraîchir un widget
+function refreshWidget(widgetId) {
+    const widget = $('#' + widgetId);
+    const widgetType = widget.data('widget-type');
+    
+    widget.addClass('loading');
+    loadWidgetData(widgetId);
+    
+    setTimeout(function() {
+        widget.removeClass('loading');
+        showToast('success', 'Widget actualisé.');
+    }, 500);
+}
+
+// Charger les données d'un widget
+function loadWidgetData(widgetId) {
+    const widget = $('#' + widgetId);
+    const widgetType = widget.data('widget-type');
+    
+    switch(widgetType) {
+        case 'stats':
+            $.get('/dashboard/api/dashboard-stats', function(data) {
+                if (data) {
+                    widget.find('.stats-container').html(`
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <div class="text-center">
+                                    <div class="fs-4 fw-bold">${data.total_stock_items || 0}</div>
+                                    <small class="text-muted">Total Stock</small>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <div class="text-center">
+                                    <div class="fs-4 fw-bold text-danger">${data.stock_alerts || 0}</div>
+                                    <small class="text-muted">Alertes</small>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                }
+            });
+            break;
+            
+        case 'activities':
+            $.get('/dashboard/api/recent-activities', function(response) {
+                if (response.success && response.activities) {
+                    let html = '';
+                    response.activities.slice(0, 3).forEach(activity => {
+                        html += `
+                            <div class="mb-2">
+                                <small class="d-block fw-bold">${activity.title}</small>
+                                <small class="text-muted">${activity.description}</small>
+                            </div>
+                        `;
+                    });
+                    
+                    if (html) {
+                        widget.find('.activities-container').html(html);
+                    }
+                }
+            });
+            break;
+            
+        case 'upcoming':
+            $.get('/dashboard/api/upcoming-tasks', function(response) {
+                if (response.success && response.tasks) {
+                    let html = '';
+                    response.tasks.slice(0, 3).forEach(task => {
+                        html += `
+                            <div class="mb-2">
+                                <small class="d-block fw-bold">${task.name}</small>
+                                <small class="text-muted">${task.project} - ${task.days_remaining} jours restants</small>
+                            </div>
+                        `;
+                    });
+                    
+                    if (html) {
+                        widget.find('.upcoming-container').html(html);
+                    }
+                }
+            });
+            break;
+            
+        case 'alerts':
+            $.get('/dashboard/api/stock-alerts', function(response) {
+                if (response.success && response.alerts) {
+                    let html = '';
+                    response.alerts.slice(0, 3).forEach(alert => {
+                        html += `
+                            <div class="mb-2">
+                                <small class="d-block fw-bold text-danger">${alert.item}</small>
+                                <small class="text-muted">${alert.quantity}/${alert.min_quantity} - ${alert.reference}</small>
+                            </div>
+                        `;
+                    });
+                    
+                    if (html) {
+                        widget.find('.alerts-container').html(html);
+                    } else {
+                        widget.find('.alerts-container').html(`
+                            <div class="text-center text-success py-3">
+                                <i class="bi bi-check-circle"></i>
+                                <p class="mt-2">Aucune alerte</p>
+                            </div>
+                        `);
+                    }
+                }
+            });
+            break;
+    }
+}
+
+// Supprimer un widget
+function removeWidget(widgetId) {
+    if (confirm('Supprimer ce widget du dashboard ?')) {
+        $('#' + widgetId).remove();
+        updateWidgetCount();
+        
+        // Si plus de widgets, afficher le placeholder
+        if ($('#dashboardPreview .widget').length === 0) {
+            $('#dashboardPreview').html(`
+                <div class="grid-placeholder text-center py-5">
+                    <i class="bi bi-layout-split display-1 text-muted"></i>
+                    <h4 class="mt-3">Dashboard vide</h4>
+                    <p class="text-muted">Glissez des widgets depuis la colonne de gauche ou ajoutez un graphique</p>
+                </div>
+            `);
+        }
+        
+        showToast('success', 'Widget supprimé.');
+    }
+}
+
+// Mettre à jour la prévisualisation du graphique
+function updateChartPreview() {
+    const title = $('#title').val() || 'Titre du graphique';
+    const chartType = $('#chart_type').val();
+    
+    $('#previewTitle').text(title);
+    
+    let typeText = '';
+    switch(chartType) {
+        case 'bar': typeText = 'Barres'; break;
+        case 'line': typeText = 'Lignes'; break;
+        case 'pie': typeText = 'Camembert'; break;
+        case 'doughnut': typeText = 'Anneau'; break;
+        case 'radar': typeText = 'Radar'; break;
+        default: typeText = chartType;
+    }
+    $('#previewType').text(`Type: ${typeText}`);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,583 @@
+{% extends "base.html" %}
+
+{% block title %}Calendrier - {{ app_name }}{% endblock %}
+
+{% block extra_css %}
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css' rel='stylesheet' />
+<style>
+    .calendar-container {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .toolbar {
+        background: white;
+        padding: 15px 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .fc-event {
+        cursor: pointer;
+        border: none !important;
+        padding: 2px 5px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+    }
+    
+    .fc-event-main {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .priority-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+    
+    .sidebar {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .upcoming-task {
+        padding: 10px;
+        border-left: 3px solid;
+        margin-bottom: 10px;
+        background: #f8f9fa;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .upcoming-task:hover {
+        background: #e7f3ff;
+        transform: translateX(5px);
+    }
+    
+    .upcoming-task-title {
+        font-weight: 600;
+        margin-bottom: 5px;
+        font-size: 0.9rem;
+    }
+    
+    .upcoming-task-meta {
+        font-size: 0.8rem;
+        color: #64748b;
+    }
+    
+    .filter-section {
+        margin-bottom: 20px;
+    }
+    
+    .filter-section h6 {
+        margin-bottom: 10px;
+        color: #1e293b;
+        font-weight: 600;
+    }
+    
+    .filter-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 0;
+    }
+    
+    .color-indicator {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+    }
+    
+    .stats-summary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+    }
+    
+    .stats-summary h5 {
+        margin-bottom: 15px;
+        font-size: 1.1rem;
+    }
+    
+    .stat-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        font-size: 0.9rem;
+    }
+    
+    .stat-row strong {
+        font-size: 1.2rem;
+    }
+    
+    .fc-event-completed {
+        opacity: 0.6;
+        text-decoration: line-through;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-calendar3"></i> Calendrier des Tâches</h2>
+            <p class="text-muted mb-0">Vue d'ensemble des échéances et événements</p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('projects.index') }}" class="btn btn-outline-primary">
+                <i class="bi bi-grid"></i> Projets
+            </a>
+            
+            {% if current_user.has_permission('projects', 'create') %}
+            <a href="{{ url_for('projects.add') }}" class="btn btn-success">
+                <i class="bi bi-plus-lg"></i> Nouveau Projet
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-3 col-md-4 mb-4">
+            <div class="sidebar">
+                <!-- Statistiques du jour -->
+                <div class="stats-summary">
+                    <h5><i class="bi bi-calendar-day"></i> Aujourd'hui</h5>
+                    <div class="stat-row">
+                        <span>Total:</span>
+                        <strong id="statTotal">0</strong>
+                    </div>
+                    <div class="stat-row">
+                        <span>En cours:</span>
+                        <strong id="statInProgress">0</strong>
+                    </div>
+                    <div class="stat-row">
+                        <span>Terminées:</span>
+                        <strong id="statCompleted">0</strong>
+                    </div>
+                    <div class="stat-row">
+                        <span>En retard:</span>
+                        <strong id="statOverdue">0</strong>
+                    </div>
+                </div>
+                
+                <!-- Filtres par statut -->
+                <div class="filter-section">
+                    <h6><i class="bi bi-funnel"></i> Statuts</h6>
+                    <div class="filter-checkbox">
+                        <input type="checkbox" id="filterPending" checked onchange="applyFilters()">
+                        <div class="color-indicator" style="background: #6c757d;"></div>
+                        <label for="filterPending">En attente</label>
+                    </div>
+                    <div class="filter-checkbox">
+                        <input type="checkbox" id="filterProgress" checked onchange="applyFilters()">
+                        <div class="color-indicator" style="background: #0d6efd;"></div>
+                        <label for="filterProgress">En cours</label>
+                    </div>
+                    <div class="filter-checkbox">
+                        <input type="checkbox" id="filterCompleted" onchange="applyFilters()">
+                        <div class="color-indicator" style="background: #198754;"></div>
+                        <label for="filterCompleted">Terminées</label>
+                    </div>
+                </div>
+                
+                <!-- Filtres par priorité -->
+                <div class="filter-section">
+                    <h6><i class="bi bi-flag"></i> Priorités</h6>
+                    <div class="filter-checkbox">
+                        <input type="checkbox" id="filterHigh" checked onchange="applyFilters()">
+                        <div class="color-indicator" style="background: #dc3545;"></div>
+                        <label for="filterHigh">Haute</label>
+                    </div>
+                    <div class="filter-checkbox">
+                        <input type="checkbox" id="filterMedium" checked onchange="applyFilters()">
+                        <div class="color-indicator" style="background: #fd7e14;"></div>
+                        <label for="filterMedium">Moyenne</label>
+                    </div>
+                    <div class="filter-checkbox">
+                        <input type="checkbox" id="filterLow" checked onchange="applyFilters()">
+                        <div class="color-indicator" style="background: #0d6efd;"></div>
+                        <label for="filterLow">Basse</label>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <!-- Tâches à venir -->
+                <h6 class="mb-3"><i class="bi bi-clock"></i> Prochaines échéances</h6>
+                <div id="upcomingTasks">
+                    <p class="text-muted text-center">Chargement...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Calendrier -->
+        <div class="col-lg-9 col-md-8">
+            <!-- Barre d'outils -->
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="calendar.today()">
+                    <i class="bi bi-calendar-day"></i> Aujourd'hui
+                </button>
+                
+                <div class="btn-group">
+                    <button class="btn btn-outline-secondary" onclick="calendar.changeView('dayGridMonth')">
+                        <i class="bi bi-calendar"></i> Mois
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="calendar.changeView('timeGridWeek')">
+                        <i class="bi bi-calendar-week"></i> Semaine
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="calendar.changeView('timeGridDay')">
+                        <i class="bi bi-calendar-day"></i> Jour
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="calendar.changeView('listWeek')">
+                        <i class="bi bi-list"></i> Liste
+                    </button>
+                </div>
+                
+                <select class="form-select" id="projectFilter" style="width: 200px;" onchange="applyFilters()">
+                    <option value="all">Tous les projets</option>
+                    {% for project in projects %}
+                    <option value="{{ project.id }}">{{ project.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="calendar-container">
+                <div id="calendar"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Détails Tâche -->
+<div class="modal fade" id="taskModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" id="taskModalHeader">
+                <h5 class="modal-title" id="taskModalTitle">Détails de la Tâche</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="taskModalBody">
+                <!-- Contenu dynamique -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <a href="#" id="taskEditLink" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> Modifier
+                </a>
+                <a href="#" id="taskViewLink" class="btn btn-info">
+                    <i class="bi bi-eye"></i> Voir le projet
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+<script>
+    let calendar = null;
+    let allEvents = [];
+    let currentTask = null;
+    let taskModal = null;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        taskModal = new bootstrap.Modal(document.getElementById('taskModal'));
+        initCalendar();
+        loadStats();
+        loadUpcomingEvents();
+    });
+    
+    function initCalendar() {
+        const calendarEl = document.getElementById('calendar');
+        
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prev,next',
+                center: 'title',
+                right: ''
+            },
+            locale: 'fr',
+            buttonText: {
+                today: "Aujourd'hui",
+                month: 'Mois',
+                week: 'Semaine',
+                day: 'Jour',
+                list: 'Liste'
+            },
+            height: 'auto',
+            eventClick: function(info) {
+                showTaskDetails(info.event.id);
+            },
+            events: function(info, successCallback, failureCallback) {
+                loadEvents(info.startStr, info.endStr, successCallback, failureCallback);
+            }
+        });
+        
+        calendar.render();
+    }
+    
+    function loadEvents(start, end, successCallback, failureCallback) {
+        const project = document.getElementById('projectFilter')?.value || 'all';
+        
+        fetch(`/calendar/events?start=${start}&end=${end}&project=${project}`)
+            .then(response => response.json())
+            .then(events => {
+                allEvents = events;
+                applyFiltersToCalendar(successCallback);
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                if (failureCallback) failureCallback(error);
+            });
+    }
+    
+    function applyFiltersToCalendar(successCallback) {
+        // Filtres statut
+        const pending = document.getElementById('filterPending').checked;
+        const progress = document.getElementById('filterProgress').checked;
+        const completed = document.getElementById('filterCompleted').checked;
+        
+        // Filtres priorité
+        const high = document.getElementById('filterHigh').checked;
+        const medium = document.getElementById('filterMedium').checked;
+        const low = document.getElementById('filterLow').checked;
+        
+        let filtered = allEvents.filter(event => {
+            const props = event.extendedProps || {};
+            
+            // Filtre statut
+            const status = props.status;
+            if (status === 'pending' && !pending) return false;
+            if (status === 'in_progress' && !progress) return false;
+            if (status === 'completed' && !completed) return false;
+            
+            // Filtre priorité
+            const priority = props.priority || 'medium';
+            if (priority === 'high' && !high) return false;
+            if (priority === 'medium' && !medium) return false;
+            if (priority === 'low' && !low) return false;
+            
+            return true;
+        });
+        
+        if (typeof successCallback === 'function') {
+            successCallback(filtered);
+        } else {
+            calendar.removeAllEvents();
+            calendar.addEventSource(filtered);
+        }
+    }
+    
+    function applyFilters() {
+        calendar.refetchEvents();
+    }
+    
+    async function showTaskDetails(taskId) {
+        try {
+            const response = await fetch(`/calendar/task/${taskId}`);
+            const task = await response.json();
+            
+            if (task.error) {
+                showAlert('danger', 'Tâche non trouvée');
+                return;
+            }
+            
+            currentTask = task;
+            
+            // Définir la couleur du header selon la priorité
+            const header = document.getElementById('taskModalHeader');
+            header.className = 'modal-header text-white';
+            if (task.priority === 'high') header.classList.add('bg-danger');
+            else if (task.priority === 'medium') header.classList.add('bg-warning');
+            else header.classList.add('bg-info');
+            
+            document.getElementById('taskModalTitle').textContent = task.name;
+            
+            // Personnel assigné
+            let personnelHTML = '';
+            if (task.assigned_personnel?.length > 0) {
+                personnelHTML = task.assigned_personnel.map(p => 
+                    `<a href="${p.url}" class="badge bg-info text-dark me-1 text-decoration-none">${p.name}</a>`
+                ).join('');
+            } else {
+                personnelHTML = '<span class="text-muted">Non assigné</span>';
+            }
+            
+            // Groupes assignés
+            let groupsHTML = '';
+            if (task.assigned_groups?.length > 0) {
+                groupsHTML = task.assigned_groups.map(g => 
+                    `<a href="${g.url}" class="badge bg-secondary me-1 text-decoration-none">${g.name}</a>`
+                ).join('');
+            } else {
+                groupsHTML = '<span class="text-muted">Aucun groupe</span>';
+            }
+            
+            // Statut badge
+            const statusBadges = {
+                'pending': '<span class="badge bg-secondary">En attente</span>',
+                'planning': '<span class="badge bg-info">Planification</span>',
+                'in_progress': '<span class="badge bg-primary">En cours</span>',
+                'completed': '<span class="badge bg-success">Terminé</span>',
+                'cancelled': '<span class="badge bg-dark">Annulé</span>'
+            };
+            
+            document.getElementById('taskModalBody').innerHTML = `
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong><i class="bi bi-folder"></i> Projet:</strong></p>
+                        <p><a href="${task.project.url}">${task.project.name}</a></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong><i class="bi bi-flag"></i> Priorité:</strong></p>
+                        <p>${task.priority_text || task.priority}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong><i class="bi bi-calendar"></i> Début:</strong></p>
+                        <p>${task.start_date}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong><i class="bi bi-calendar-check"></i> Fin:</strong></p>
+                        <p>${task.end_date || task.start_date}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong><i class="bi bi-check-circle"></i> Statut:</strong></p>
+                        <p>${statusBadges[task.status] || task.status}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong><i class="bi bi-list-check"></i> Type:</strong></p>
+                        <p>${task.task_type || 'Non défini'}</p>
+                    </div>
+                    <div class="col-12">
+                        <p class="mb-1"><strong><i class="bi bi-people"></i> Personnel assigné:</strong></p>
+                        <p>${personnelHTML}</p>
+                    </div>
+                    <div class="col-12">
+                        <p class="mb-1"><strong><i class="bi bi-people-fill"></i> Groupes:</strong></p>
+                        <p>${groupsHTML}</p>
+                    </div>
+                    ${task.description ? `
+                    <div class="col-12">
+                        <p class="mb-1"><strong><i class="bi bi-text-left"></i> Description:</strong></p>
+                        <p class="text-muted">${task.description}</p>
+                    </div>
+                    ` : ''}
+                    ${task.notes ? `
+                    <div class="col-12">
+                        <p class="mb-1"><strong><i class="bi bi-sticky"></i> Notes:</strong></p>
+                        <p class="text-muted">${task.notes}</p>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            // Mettre à jour les liens
+            document.getElementById('taskEditLink').href = `/projects/tasks/${task.id}/edit`;
+            document.getElementById('taskViewLink').href = task.project.url;
+            
+            taskModal.show();
+            
+        } catch (error) {
+            console.error('Erreur:', error);
+            showAlert('danger', 'Erreur lors du chargement des détails');
+        }
+    }
+    
+    async function loadStats() {
+        try {
+            const response = await fetch('/calendar/api/stats');
+            const stats = await response.json();
+            
+            document.getElementById('statTotal').textContent = stats.total || 0;
+            document.getElementById('statInProgress').textContent = stats.in_progress || 0;
+            document.getElementById('statCompleted').textContent = stats.completed || 0;
+            document.getElementById('statOverdue').textContent = stats.overdue || 0;
+        } catch (error) {
+            console.error('Erreur stats:', error);
+        }
+    }
+    
+    async function loadUpcomingEvents() {
+        try {
+            const response = await fetch('/calendar/api/upcoming-events');
+            const events = await response.json();
+            
+            const container = document.getElementById('upcomingTasks');
+            
+            if (events.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center py-3">Aucune tâche à venir</p>';
+                return;
+            }
+            
+            container.innerHTML = events.map(event => {
+                const color = getPriorityColor(event.priority);
+                const priorityClass = event.priority === 'high' ? 'priority-high' : 
+                                   event.priority === 'medium' ? 'priority-medium' : 'priority-low';
+                
+                return `
+                    <div class="upcoming-task ${priorityClass}" onclick="showTaskDetails(${event.id})" style="border-left-color: ${color}">
+                        <div class="upcoming-task-title">
+                            <span class="priority-dot" style="background: ${color}"></span>
+                            ${event.title}
+                        </div>
+                        <div class="upcoming-task-meta">
+                            <i class="bi bi-calendar"></i> ${event.start_date}
+                            ${event.project ? `<br><i class="bi bi-folder"></i> ${event.project}` : ''}
+                            ${event.days_remaining > 0 ? `<span class="badge bg-warning ms-1">J-${event.days_remaining}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+        } catch (error) {
+            console.error('Erreur upcoming:', error);
+            document.getElementById('upcomingTasks').innerHTML = '<p class="text-muted text-center">Erreur de chargement</p>';
+        }
+    }
+    
+    function getPriorityColor(priority) {
+        const colors = {
+            'high': '#dc3545',
+            'medium': '#fd7e14',
+            'low': '#0d6efd'
+        };
+        return colors[priority] || '#0d6efd';
+    }
+    
+    function showAlert(type, message) {
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alert.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'x-circle'} me-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alert);
+        setTimeout(() => alert.remove(), 5000);
+    }
+</script>
+{% endblock %}

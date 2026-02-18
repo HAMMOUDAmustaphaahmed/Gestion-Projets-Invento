@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Aide - {{ app_name }}{% endblock %}
+
+{% block page_title %}
+<i class="bi bi-question-circle"></i> Centre d'aide
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Navigation</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="#getting-started" class="list-group-item list-group-item-action">
+                    <i class="bi bi-rocket"></i> Premiers pas
+                </a>
+                <a href="#stock" class="list-group-item list-group-item-action">
+                    <i class="bi bi-box-seam"></i> Gestion du stock
+                </a>
+                <a href="#projects" class="list-group-item list-group-item-action">
+                    <i class="bi bi-kanban"></i> Projets et tâches
+                </a>
+                <a href="#personnel" class="list-group-item list-group-item-action">
+                    <i class="bi bi-people"></i> Personnel et groupes
+                </a>
+                <a href="#calendar" class="list-group-item list-group-item-action">
+                    <i class="bi bi-calendar-event"></i> Calendrier
+                </a>
+                <a href="#dashboard" class="list-group-item list-group-item-action">
+                    <i class="bi bi-speedometer2"></i> Tableau de bord
+                </a>
+                <a href="#faq" class="list-group-item list-group-item-action">
+                    <i class="bi bi-chat-square-text"></i> FAQ
+                </a>
+                <a href="#contact" class="list-group-item list-group-item-action">
+                    <i class="bi bi-envelope"></i> Contact
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <!-- Premiers pas -->
+        <div class="card mb-4" id="getting-started">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-rocket"></i> Premiers pas</h4>
+            </div>
+            <div class="card-body">
+                <h5>Bienvenue dans {{ app_name }}</h5>
+                <p>{{ app_name }} est un système de Gestion de Maintenance Assistée par Ordinateur (GMAO) conçu pour optimiser la gestion de votre maintenance, de vos stocks et de vos projets.</p>
+                
+                <div class="row mt-4">
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="bi bi-person-plus fs-1 text-primary mb-3"></i>
+                                <h6>Création de compte</h6>
+                                <p class="small">Les utilisateurs sont créés par l'administrateur</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="bi bi-shield-check fs-1 text-success mb-3"></i>
+                                <h6>Système de rôles</h6>
+                                <p class="small">Permissions adaptées à chaque profil</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="bi bi-bell fs-1 text-warning mb-3"></i>
+                                <h6>Notifications</h6>
+                                <p class="small">Alertes en temps réel</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gestion du stock -->
+        <div class="card mb-4" id="stock">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="bi bi-box-seam"></i> Gestion du stock</h4>
+            </div>
+            <div class="card-body">
+                <h5>Fonctionnalités du module Stock</h5>
+                <ul>
+                    <li><strong>Inventaire complet :</strong> Suivi des articles avec références uniques</li>
+                    <li><strong>Attributs dynamiques :</strong> Chaque type d'article peut avoir ses propres caractéristiques</li>
+                    <li><strong>Alertes automatiques :</strong> Notifications lorsque les stocks sont bas</li>
+                    <li><strong>Gestion des fournisseurs :</strong> Informations complètes sur les fournisseurs</li>
+                    <li><strong>Catégories :</strong> Organisation hiérarchique des articles</li>
+                    <li><strong>Documents :</strong> Stockage des fiches techniques, manuels, etc.</li>
+                </ul>
+                
+                <div class="alert alert-info mt-3">
+                    <h6><i class="bi bi-lightbulb"></i> Conseil</h6>
+                    <p class="mb-0">Définissez des quantités minimales pour chaque article pour recevoir des alertes automatiques lorsque le stock est faible.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Projets et tâches -->
+        <div class="card mb-4" id="projects">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0"><i class="bi bi-kanban"></i> Projets et tâches</h4>
+            </div>
+            <div class="card-body">
+                <h5>Gestion des projets</h5>
+                <p>Créez et gérez vos projets de maintenance avec un suivi complet :</p>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul>
+                            <li>Définition du budget et des délais</li>
+                            <li>Suivi des coûts réels</li>
+                            <li>Assignation des ressources</li>
+                            <li>Documents associés</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul>
+                            <li>Types de tâches personnalisables</li>
+                            <li>Consommation de matériel</li>
+                            <li>Frais supplémentaires</li>
+                            <li>Justifications et notes</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <h5 class="mt-4">Workflow des tâches</h5>
+                <div class="d-flex align-items-center justify-content-between mt-3">
+                    <div class="text-center">
+                        <div class="badge bg-secondary p-2">En attente</div>
+                        <div class="small mt-1">Création</div>
+                    </div>
+                    <div class="flex-grow-1 border-top"></div>
+                    <div class="text-center">
+                        <div class="badge bg-info p-2">En cours</div>
+                        <div class="small mt-1">Exécution</div>
+                    </div>
+                    <div class="flex-grow-1 border-top"></div>
+                    <div class="text-center">
+                        <div class="badge bg-success p-2">Terminé</div>
+                        <div class="small mt-1">Finalisation</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- FAQ -->
+        <div class="card mb-4" id="faq">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0"><i class="bi bi-chat-square-text"></i> Foire aux questions</h4>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="faqAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                Comment réinitialiser mon mot de passe ?
+                            </button>
+                        </h2>
+                        <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Contactez votre administrateur système. Seuls les administrateurs peuvent réinitialiser les mots de passe pour des raisons de sécurité.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                Comment ajouter un nouvel article au stock ?
+                            </button>
+                        </h2>
+                        <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Rendez-vous dans le menu Stock > Gestion du stock, puis cliquez sur "Ajouter un élément". Remplissez le formulaire avec les informations de l'article, y compris la quantité minimale pour les alertes.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                Comment créer un nouveau projet ?
+                            </button>
+                        </h2>
+                        <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Allez dans Projets > Liste des projets, cliquez sur "Nouveau projet". Définissez les dates, le budget, et ajoutez des tâches selon vos besoins.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                Comment personnaliser mon tableau de bord ?
+                            </button>
+                        </h2>
+                        <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Cliquez sur "Personnaliser le dashboard" dans le menu utilisateur. Vous pouvez ajouter, supprimer ou réorganiser les graphiques selon vos besoins.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Contact -->
+        <div class="card" id="contact">
+            <div class="card-header bg-dark text-white">
+                <h4 class="mb-0"><i class="bi bi-envelope"></i> Contact et support</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Support technique</h5>
+                        <p>Pour toute assistance technique :</p>
+                        <ul>
+                            <li><strong>Email :</strong> support@gmao.com</li>
+                            <li><strong>Téléphone :</strong> +33 1 23 45 67 89</li>
+                            <li><strong>Horaires :</strong> Lundi - Vendredi, 9h-18h</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5>Administrateur système</h5>
+                        <p>Pour les demandes spécifiques à votre organisation :</p>
+                        <ul>
+                            <li>Contactez votre administrateur interne</li>
+                            <li>Demandes de création de comptes</li>
+                            <li>Modifications des permissions</li>
+                            <li>Problèmes d'accès</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h5>Documentation</h5>
+                    <p>Consultez notre documentation complète pour plus d'informations :</p>
+                    <a href="#" class="btn btn-outline-primary">
+                        <i class="bi bi-book"></i> Guide utilisateur
+                    </a>
+                    <a href="#" class="btn btn-outline-secondary ms-2">
+                        <i class="bi bi-download"></i> Fiches pratiques
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.list-group-item.active {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: #e7f1ff;
+    color: #0d6efd;
+}
+
+.card-header h4 {
+    font-weight: 600;
+}
+</style>
+{% endblock %}

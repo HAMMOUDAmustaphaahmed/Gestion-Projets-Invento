@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-folder{% if project %}-open{% endif %}"></i>
+                {% if project %}Modifier le projet{% else %}Créer un projet{% endif %}
+            </h2>
+            <a href="{% if project %}{{ url_for('projects.view', project_id=project.id) }}{% else %}{{ url_for('projects.index') }}{% endif %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Retour
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle"></i> 
+                    Informations du projet
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+                    
+                    <!-- Nom du projet -->
+                    <div class="mb-3">
+                        {{ form.name.label(class="form-label") }}
+                        {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else ""), placeholder="Entrez le nom du projet") }}
+                        {% if form.name.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.name.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <!-- CHAMP CLIENT -->
+                    <div class="col-md-6">
+                        <label class="form-label">{{ form.client_id.label }}</label>
+                        {{ form.client_id(class="form-select select2" + (" is-invalid" if form.client_id.errors else "")) }}
+                        {% if form.client_id.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.client_id.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            <a href="{{ url_for('clients.add') }}" target="_blank">
+                                <i class="bi bi-plus-circle"></i> Ajouter un nouveau client
+                            </a>
+                        </small>
+                    </div>
+                    <!-- Description -->
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows="4", placeholder="Description détaillée du projet") }}
+                        {% if form.description.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.description.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Dates -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.start_date.label(class="form-label") }}
+                            {{ form.start_date(class="form-control" + (" is-invalid" if form.start_date.errors else "")) }}
+                            {% if form.start_date.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.start_date.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.end_date.label(class="form-label") }}
+                            {{ form.end_date(class="form-control" + (" is-invalid" if form.end_date.errors else "")) }}
+                            {% if form.end_date.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.end_date.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Budget estimé -->
+                    <div class="mb-3">
+                        {{ form.estimated_budget.label(class="form-label") }}
+                        <div class="input-group">
+                            {{ form.estimated_budget(class="form-control" + (" is-invalid" if form.estimated_budget.errors else ""), placeholder="0.00") }}
+                            <span class="input-group-text">€</span>
+                            {% if form.estimated_budget.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.estimated_budget.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <!-- Budget réel -->
+                    <div class="mb-3">
+                        {{ form.budget_reel.label(class="form-label") }}
+                        <div class="input-group">
+                            {{ form.budget_reel(class="form-control" + (" is-invalid" if form.budget_reel.errors else ""), placeholder="0.00") }}
+                            <span class="input-group-text">€</span>
+                            {% if form.budget_reel.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.budget_reel.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Prix de vente -->
+                    <div class="mb-3">
+                        {{ form.prix_vente.label(class="form-label") }}
+                        <div class="input-group">
+                            {{ form.prix_vente(class="form-control" + (" is-invalid" if form.prix_vente.errors else ""), placeholder="0.00", id="prix_vente_input") }}
+                            <span class="input-group-text">€</span>
+                            {% if form.prix_vente.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.prix_vente.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Marge (calculée automatiquement) -->
+                    <div class="mb-3">
+                        <label class="form-label">Marge (€)</label>
+                        <div class="input-group">
+                            {{ form.marge(class="form-control", placeholder="0.00", id="marge_input", readonly=True) }}
+                            <span class="input-group-text">€</span>
+                        </div>
+                        <small class="form-text text-muted">Calculée automatiquement : Prix de vente − Budget réel</small>
+                    </div>
+
+                    <!-- Statut et Priorité -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.status.label(class="form-label") }}
+                            {{ form.status(class="form-select" + (" is-invalid" if form.status.errors else "")) }}
+                            {% if form.status.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.status.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.priority.label(class="form-label") }}
+                            {{ form.priority(class="form-select" + (" is-invalid" if form.priority.errors else "")) }}
+                            {% if form.priority.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.priority.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="mb-3">
+                        {{ form.notes.label(class="form-label") }}
+                        {{ form.notes(class="form-control" + (" is-invalid" if form.notes.errors else ""), rows="3", placeholder="Notes additionnelles") }}
+                        {% if form.notes.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.notes.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Boutons -->
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{% if project %}{{ url_for('projects.view', project_id=project.id) }}{% else %}{{ url_for('projects.index') }}{% endif %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Annuler
+                        </a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if project %}
+        <!-- Informations supplémentaires pour modification -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informations</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-2">
+                            <strong>Créé le:</strong><br>
+                            <small class="text-muted">{{ project.created_at|format_datetime('%d/%m/%Y %H:%M') }}</small>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-2">
+                            <strong>Dernière modification:</strong><br>
+                            <small class="text-muted">{{ project.created_at|format_datetime('%d/%m/%Y %H:%M') }}</small>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0">
+                            <strong>Nombre de tâches:</strong><br>
+                            <small class="text-muted">{{ project.tasks.count() }} tâche(s)</small>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0">
+                            <strong>Coût actuel:</strong><br>
+                            <small class="text-muted">{{ project.actual_cost|format_currency }}</small>
+                        </p> 
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validation des dates
+    const startDateInput = document.querySelector('input[name="start_date"]');
+    const endDateInput = document.querySelector('input[name="end_date"]');
+    
+    if (startDateInput && endDateInput) {
+        function validateDates() {
+            const startDate = new Date(startDateInput.value);
+            const endDate = new Date(endDateInput.value);
+            
+            if (startDate && endDate && startDate > endDate) {
+                endDateInput.setCustomValidity('La date de fin doit être après la date de début');
+            } else {
+                endDateInput.setCustomValidity('');
+            }
+        }
+        
+        startDateInput.addEventListener('change', validateDates);
+        endDateInput.addEventListener('change', validateDates);
+    }
+    
+    // Badge de statut en temps réel
+    const statusSelect = document.querySelector('select[name="status"]');
+    const prioritySelect = document.querySelector('select[name="priority"]');
+    
+    function updateStatusPreview() {
+        // Vous pouvez ajouter une prévisualisation visuelle ici
+    }
+    
+    if (statusSelect) statusSelect.addEventListener('change', updateStatusPreview);
+    if (prioritySelect) prioritySelect.addEventListener('change', updateStatusPreview);
+});
+// Calcul automatique de la marge
+const budgetReelInput = document.querySelector('input[name="budget_reel"]');
+const prixVenteInput = document.querySelector('input[name="prix_vente"]');
+const margeInput = document.querySelector('input[name="marge"]');
+
+function calculateMarge() {
+    const budgetReel = parseFloat(budgetReelInput.value) || 0;
+    const prixVente = parseFloat(prixVenteInput.value) || 0;
+    const marge = prixVente - budgetReel;
+    margeInput.value = marge.toFixed(2);
+    // Colorer en rouge si marge négative, vert si positive
+    margeInput.style.color = marge < 0 ? 'red' : 'green';
+}
+
+if (budgetReelInput && prixVenteInput && margeInput) {
+    budgetReelInput.addEventListener('input', calculateMarge);
+    prixVenteInput.addEventListener('input', calculateMarge);
+    // Calculer à l'ouverture si valeurs déjà présentes
+    calculateMarge();
+}
+</script>
+{% endblock %}

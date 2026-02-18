@@ -1,0 +1,1149 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des matériaux - Tâche {{ task.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --editable-bg: #e3f2fd;
+        --editable-border: #2196f3;
+        --editable-focus: #1976d2;
+        --editable-hover: #bbdefb;
+        --success-bg: #c8e6c9;
+        --error-bg: #ffcdd2;
+        --saving-bg: #fff9c4;
+    }
+
+    .materials-table-container {
+        position: relative;
+        overflow-x: auto;
+    }
+
+    .cell-editable {
+        position: relative;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        user-select: none;
+    }
+
+    .cell-value {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 80px;
+        padding: 8px 16px;
+        border-radius: 8px;
+        background: var(--editable-bg);
+        border: 2px solid transparent;
+        font-weight: 600;
+        color: #1565c0;
+        transition: all 0.2s ease;
+    }
+
+    .cell-editable:hover .cell-value {
+        background: var(--editable-hover);
+        border-color: var(--editable-border);
+        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+    }
+
+    .cell-value::after {
+        content: '\f4ca';
+        font-family: 'bootstrap-icons';
+        font-size: 0.75rem;
+        margin-left: 6px;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+
+    .cell-editable:hover .cell-value::after {
+        opacity: 0.6;
+    }
+
+    .cell-editable.editing .cell-value {
+        display: none;
+    }
+
+    .cell-input {
+        display: none;
+        width: 100px;
+        padding: 8px 12px;
+        border: 2px solid var(--editable-focus);
+        border-radius: 8px;
+        text-align: center;
+        font-size: 1rem;
+        font-weight: 600;
+        background: white;
+        color: #1565c0;
+        box-shadow: 0 4px 16px rgba(25, 118, 210, 0.25);
+    }
+
+    .cell-editable.editing .cell-input {
+        display: inline-block;
+    }
+
+    .cell-editable.saving {
+        opacity: 0.7;
+        pointer-events: none;
+    }
+
+    .cell-editable.saved .cell-value {
+        background: var(--success-bg);
+        color: #2e7d32;
+        animation: savedPulse 0.6s ease;
+    }
+
+    .cell-editable.error .cell-value {
+        background: var(--error-bg);
+        color: #c62828;
+    }
+
+    @keyframes savedPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    .cell-spinner {
+        display: none;
+        width: 16px;
+        height: 16px;
+        border: 2px solid #e3f2fd;
+        border-top: 2px solid var(--editable-focus);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-left: 8px;
+    }
+
+    .cell-editable.saving .cell-spinner {
+        display: inline-block;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .action-btn {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        transition: all 0.2s;
+        border: none;
+        background: transparent;
+        color: #6c757d;
+    }
+
+    .action-btn:hover {
+        background: #e9ecef;
+        transform: translateY(-1px);
+    }
+
+    .action-btn.edit-btn:hover {
+        background: #e3f2fd;
+        color: #1976d2;
+    }
+
+    .action-btn.delete-btn:hover {
+        background: #ffebee;
+        color: #c62828;
+    }
+
+    .toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .toast-custom {
+        padding: 14px 24px;
+        border-radius: 10px;
+        color: white;
+        font-weight: 500;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        animation: toastSlide 0.4s ease;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 300px;
+    }
+
+    @keyframes toastSlide {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+
+    .toast-success { background: linear-gradient(135deg, #43a047, #66bb6a); }
+    .toast-error { background: linear-gradient(135deg, #e53935, #ef5350); }
+    .toast-info { background: linear-gradient(135deg, #1e88e5, #42a5f5); }
+
+    tr.editing-row {
+        background-color: #e3f2fd !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-box-seam text-primary"></i>
+                Gestion des matériaux
+            </h2>
+            <p class="text-muted mb-0">{{ task.name }} | Projet: {{ task.project.name }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('projects.view_task', task_id=task.id) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Retour
+            </a>
+            {% if task.status != 'completed' %}
+            <button type="button" class="btn btn-primary" onclick="openAddModal()">
+                <i class="bi bi-plus-circle"></i> Ajouter
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card border-primary h-100 shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-primary bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-box text-primary fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="ms-3">
+                        <h4 class="mb-0">{{ stock_items|length }}</h4>
+                        <small class="text-muted">Matériaux</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-success h-100 shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-success bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-check-circle text-success fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="ms-3">
+                        <h4 class="mb-0 text-success">{{ sufficient_items|length }}</h4>
+                        <small class="text-muted">Disponibles</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-warning h-100 shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-warning bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-exclamation-triangle text-warning fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="ms-3">
+                        <h4 class="mb-0 text-warning">{{ shortage_items|length }}</h4>
+                        <small class="text-muted">En manque</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card border-info h-100 shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-info bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-arrow-return-left text-info fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="ms-3">
+                        <h4 class="mb-0 text-info">{{ return_items|length }}</h4>
+                        <small class="text-muted">À retourner</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Materials Table -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 border-bottom">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-list-check text-primary me-2"></i>Liste des matériaux</h5>
+                {% if task.use_stock and task.status != 'completed' %}
+                <button type="button" class="btn btn-success btn-sm" onclick="useStock()">
+                    <i class="bi bi-cart-check me-1"></i>Utiliser le stock
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card-body p-0 materials-table-container">
+            {% if stock_items %}
+            <table class="table table-hover materials-table mb-0 align-middle" id="materialsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Matériau</th>
+                        <th class="text-center">Qté estimée</th>
+                        <th class="text-center">Unité</th>
+                        <th class="text-center">Stock dispo</th>
+                        <th class="text-center">Statut</th>
+                        <th class="text-center">Qté utilisée</th>
+                        <th class="text-center">Reste</th>
+                        <th class="text-center">À ajouter</th>
+                        <th class="text-center">Justif.</th>
+                        <th class="text-center pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in stock_items %}
+                    <tr data-item-id="{{ item.id }}" 
+                        data-stock-item-id="{{ item.stock_item_id }}"
+                        class="{{ 'table-warning' if not item.is_quantity_sufficient() else '' }}">
+                        
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <span class="bg-primary bg-opacity-10 text-primary rounded p-2">
+                                        <i class="bi bi-box"></i>
+                                    </span>
+                                </div>
+                                <div class="ms-3">
+                                    <strong class="d-block">{{ item.stock_item.libelle if item.stock_item else 'N/A' }}</strong>
+                                    <small class="text-muted">{{ item.stock_item.reference if item.stock_item else '' }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        
+                        <td class="text-center">
+                            <span class="fw-bold text-muted">{{ item.estimated_quantity }}</span>
+                        </td>
+                        
+                        <td class="text-center">
+                            <span class="badge bg-light text-dark border">{{ item.unit_type or 'piece' }}</span>
+                        </td>
+                        
+                        <td class="text-center">
+                            {% if item.stock_item %}
+                            <span class="fw-bold {{ 'text-success' if item.stock_item.quantity >= item.estimated_quantity else 'text-danger' }}">
+                                {{ item.stock_item.quantity|default(0)|round(2) }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        
+                        <td class="text-center">
+                            {% if item.is_quantity_sufficient() %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                <i class="bi bi-check-circle me-1"></i>OK
+                            </span>
+                            {% else %}
+                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                                <i class="bi bi-exclamation-triangle me-1"></i>Manque
+                            </span>
+                            {% endif %}
+                        </td>
+                        
+                        <!-- Qté utilisée - ÉDITABLE -->
+                        <td class="text-center cell-editable" 
+                            data-field="actual_quantity_used"
+                            data-item-id="{{ item.id }}"
+                            data-value="{{ item.actual_quantity_used if item.actual_quantity_used is not none else '' }}"
+                            data-original="{{ item.estimated_quantity }}"
+                            {{ 'data-readonly="true"' if task.status == 'completed' else '' }}>
+                            
+                            {% if task.status != 'completed' %}
+                            <span class="cell-value">
+                                {{ item.actual_quantity_used if item.actual_quantity_used is not none else item.estimated_quantity }}
+                            </span>
+                            <input type="number" class="cell-input" step="0.01" min="0" 
+                                   value="{{ item.actual_quantity_used if item.actual_quantity_used is not none else item.estimated_quantity }}">
+                            <span class="cell-spinner"></span>
+                            {% else %}
+                            <span class="badge bg-success">{{ item.actual_quantity_used or item.estimated_quantity }}</span>
+                            {% endif %}
+                        </td>
+                        
+                        <!-- Reste - ÉDITABLE -->
+                        <td class="text-center cell-editable"
+                            data-field="remaining_quantity"
+                            data-item-id="{{ item.id }}"
+                            data-value="{{ item.remaining_quantity if item.remaining_quantity is not none else '' }}"
+                            {{ 'data-readonly="true"' if task.status == 'completed' or not item.return_to_stock else '' }}>
+                            
+                            {% if task.status != 'completed' and item.return_to_stock %}
+                            <span class="cell-value">{{ item.remaining_quantity or 0 }}</span>
+                            <input type="number" class="cell-input" step="0.01" min="0" value="{{ item.remaining_quantity or 0 }}">
+                            <span class="cell-spinner"></span>
+                            {% elif not item.return_to_stock %}
+                            <span class="badge bg-secondary">Non retourné</span>
+                            {% else %}
+                            <span class="text-muted">{{ item.remaining_quantity or 0 }}</span>
+                            {% endif %}
+                        </td>
+                        
+                        <!-- À ajouter - ÉDITABLE -->
+                        <td class="text-center cell-editable"
+                            data-field="additional_quantity"
+                            data-item-id="{{ item.id }}"
+                            data-value="{{ item.additional_quantity if item.additional_quantity is not none else '' }}"
+                            {{ 'data-readonly="true"' if task.status == 'completed' else '' }}>
+                            
+                            {% if task.status != 'completed' %}
+                            <span class="cell-value {{ 'text-primary fw-bold' if item.additional_quantity else '' }}">
+                                {{ item.additional_quantity or 0 }}
+                            </span>
+                            <input type="number" class="cell-input" step="0.01" min="0" value="{{ item.additional_quantity or 0 }}">
+                            <span class="cell-spinner"></span>
+                            {% else %}
+                            <span class="text-muted">{{ item.additional_quantity or 0 }}</span>
+                            {% endif %}
+                        </td>
+                        
+                        <!-- Justification -->
+                        <td class="text-center">
+                            {% if item.justification_shortage %}
+                            <button type="button" class="action-btn" data-bs-toggle="tooltip" 
+                                    title="{{ item.justification_shortage[:100] }}...">
+                                <i class="bi bi-info-circle-fill text-info"></i>
+                            </button>
+                            {% else %}
+                            <button type="button" class="action-btn" onclick="openJustifyModal({{ item.id }})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            {% endif %}
+                        </td>
+                        
+                        <!-- Actions -->
+                        <td class="text-center pe-4">
+                            {% if task.status != 'completed' %}
+                            <button type="button" class="action-btn edit-btn" 
+                                    onclick="openEditModal({{ item.id }})" title="Éditer">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                            <button type="button" class="action-btn delete-btn" 
+                                    onclick="deleteMaterial({{ item.id }})" title="Supprimer">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-box-seam display-1 text-muted opacity-25"></i>
+                <p class="text-muted mt-3 mb-4">Aucun matériau assigné à cette tâche</p>
+                {% if task.status != 'completed' %}
+                <button type="button" class="btn btn-primary btn-lg" onclick="openAddModal()">
+                    <i class="bi bi-plus-circle me-2"></i>Ajouter le premier matériau
+                </button>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        
+        {% if stock_items and task.status != 'completed' %}
+        <div class="card-footer bg-light py-3">
+            <small class="text-muted">
+                <i class="bi bi-info-circle me-1"></i>
+                <strong>Cliquez</strong> sur les valeurs des colonnes "Qté utilisée", "Reste" ou "À ajouter" pour les modifier directement, 
+                ou utilisez le bouton <i class="bi bi-pencil-square"></i> pour éditer toutes les informations.
+            </small>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Modal: Édition complète -->
+<div class="modal fade" id="editMaterialModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil-square me-2"></i>Éditer le matériau
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editMaterialForm" onsubmit="submitEditModal(event)">
+                <input type="hidden" id="editItemId" name="item_id">
+                <div class="modal-body">
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <div class="p-3 bg-light rounded border">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <span class="bg-primary bg-opacity-10 text-primary rounded p-2">
+                                            <i class="bi bi-box fs-4"></i>
+                                        </span>
+                                    </div>
+                                    <div class="ms-3">
+                                        <h6 class="mb-1" id="editMaterialName">-</h6>
+                                        <small class="text-muted" id="editMaterialRef">-</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Quantité estimée</label>
+                            <input type="text" class="form-control" id="editEstimatedQty" readonly disabled>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Unité</label>
+                            <input type="text" class="form-control" id="editUnit" readonly disabled>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-success">
+                                <i class="bi bi-check-circle me-1"></i>Qté utilisée
+                            </label>
+                            <input type="number" name="actual_quantity_used" id="editActualQty" class="form-control form-control-lg" 
+                                   step="0.01" min="0">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-info">
+                                <i class="bi bi-arrow-return-left me-1"></i>Reste
+                            </label>
+                            <input type="number" name="remaining_quantity" id="editRemainingQty" class="form-control form-control-lg" 
+                                   step="0.01" min="0">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-primary">
+                                <i class="bi bi-plus-circle me-1"></i>À ajouter
+                            </label>
+                            <input type="number" name="additional_quantity" id="editAdditionalQty" class="form-control form-control-lg" 
+                                   step="0.01" min="0">
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="return_to_stock" id="editReturnToStock" value="1">
+                                <label class="form-check-label fw-bold" for="editReturnToStock">
+                                    Retourner le reste au stock
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold text-warning">
+                                <i class="bi bi-chat-left-text me-1"></i>Justification
+                            </label>
+                            <textarea name="justification_shortage" id="editJustification" class="form-control" rows="2"></textarea>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold text-muted">
+                                <i class="bi bi-sticky me-1"></i>Notes
+                            </label>
+                            <textarea name="notes" id="editNotes" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i>Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Ajouter -->
+<div class="modal fade" id="addMaterialModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Ajouter des matériaux</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" id="searchStock" placeholder="Rechercher..." onkeyup="filterStock()">
+                    </div>
+                </div>
+                <div class="table-responsive" style="max-height: 400px;">
+                    <table class="table table-sm table-hover">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th width="40"><input type="checkbox" id="selectAll" class="form-check-input"></th>
+                                <th>Matériau</th>
+                                <th class="text-center">Stock</th>
+                                <th width="100">Qté</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stockList">
+                            {% for stock in all_stock_items %}
+                            <tr class="stock-item" data-name="{{ stock.libelle|lower }} {{ stock.reference|lower }}">
+                                <td><input type="checkbox" class="stock-check form-check-input" value="{{ stock.id }}"></td>
+                                <td>
+                                    <strong>{{ stock.libelle }}</strong>
+                                    <br><small class="text-muted">{{ stock.reference }}</small>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge {{ 'bg-success' if stock.quantity > 20 else 'bg-warning' if stock.quantity > 0 else 'bg-danger' }}">
+                                        {{ stock.quantity|round(2) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm stock-qty" 
+                                           data-id="{{ stock.id }}" value="1" min="0.01" step="0.01">
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" onclick="submitAddMaterials()">
+                    <i class="bi bi-plus-circle me-2"></i>Ajouter
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Justifier -->
+<div class="modal fade" id="justifyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i>Justifier</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="justifyForm" onsubmit="submitJustify(event)">
+                <input type="hidden" id="justifyItemId" name="item_id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Quantité manquante *</label>
+                        <input type="number" name="additional_quantity_needed" class="form-control" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Justification *</label>
+                        <textarea name="justification" class="form-control" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-warning">Valider</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/**
+ * MaterialsManager - Gestion complète des matériaux
+ */
+const MaterialsManager = (function() {
+    'use strict';
+
+    const CONFIG = {
+        endpoints: {
+            update_field: '{{ url_for("projects.update_material_field") }}',
+            update_full: '{{ url_for("projects.update_material_full") }}',
+            get_material: '{{ url_for("projects.get_material", item_id=0) }}'.replace('/0', '/'),
+            add_batch: '{{ url_for("projects.add_stock_items_batch", task_id=task.id) }}',
+            use_stock: '{{ url_for("projects.use_stock", task_id=task.id) }}',
+            delete: '/projects/tasks/materials/',
+            justify: '/projects/tasks/materials/'
+        },
+        csrfToken: '{{ csrf_token() }}'
+    };
+
+    let activeEdit = null;
+
+    function init() {
+        bindEditableCells();
+        bindGlobalEvents();
+        initTooltips();
+        console.log('✓ MaterialsManager initialized');
+    }
+
+    function initTooltips() {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
+
+    function bindEditableCells() {
+        document.querySelectorAll('.cell-editable:not([data-readonly="true"])').forEach(cell => {
+            const value = cell.querySelector('.cell-value');
+            const input = cell.querySelector('.cell-input');
+            
+            if (!value || !input) return;
+
+            value.addEventListener('click', (e) => {
+                e.stopPropagation();
+                startEdit(cell, input);
+            });
+
+            input.addEventListener('keydown', handleInputKeydown);
+            input.addEventListener('blur', () => finishEdit(cell));
+        });
+    }
+
+    function startEdit(cell, input) {
+        if (activeEdit && activeEdit !== cell) {
+            finishEdit(activeEdit);
+        }
+
+        const row = cell.closest('tr');
+        if (row) row.classList.add('editing-row');
+
+        activeEdit = cell;
+        cell.classList.add('editing');
+        
+        const currentValue = cell.dataset.value;
+        input.value = currentValue !== '' ? currentValue : (cell.dataset.original || '0');
+        
+        input.focus();
+        input.select();
+    }
+
+    function handleInputKeydown(e) {
+        const cell = e.target.closest('.cell-editable');
+        
+        switch(e.key) {
+            case 'Enter':
+                e.preventDefault();
+                finishEdit(cell);
+                break;
+            case 'Escape':
+                e.preventDefault();
+                cancelEdit(cell);
+                break;
+            case 'Tab':
+                e.preventDefault();
+                finishEdit(cell);
+                moveToNextCell(cell, e.shiftKey);
+                break;
+        }
+    }
+
+    function moveToNextCell(currentCell, reverse = false) {
+        const cells = Array.from(document.querySelectorAll('.cell-editable:not([data-readonly="true"])'));
+        const currentIndex = cells.indexOf(currentCell);
+        const nextIndex = reverse ? currentIndex - 1 : currentIndex + 1;
+        
+        if (nextIndex >= 0 && nextIndex < cells.length) {
+            const nextCell = cells[nextIndex];
+            const input = nextCell.querySelector('.cell-input');
+            if (input) {
+                nextCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                startEdit(nextCell, input);
+            }
+        }
+    }
+
+    function finishEdit(cell) {
+        if (!cell.classList.contains('editing')) return;
+
+        const input = cell.querySelector('.cell-input');
+        const newValue = input.value.trim();
+        const oldValue = cell.dataset.value;
+
+        if (newValue === '') {
+            cancelEdit(cell);
+            return;
+        }
+
+        const numValue = parseFloat(newValue);
+        if (isNaN(numValue) || numValue < 0) {
+            showToast('Valeur invalide', 'error');
+            cancelEdit(cell);
+            return;
+        }
+
+        if (numValue === parseFloat(oldValue)) {
+            cancelEdit(cell);
+            return;
+        }
+
+        saveInlineValue(cell, numValue);
+    }
+
+    function cancelEdit(cell) {
+        const row = cell.closest('tr');
+        if (row) row.classList.remove('editing-row');
+        
+        cell.classList.remove('editing');
+        activeEdit = null;
+    }
+
+    async function saveInlineValue(cell, value) {
+        const field = cell.dataset.field;
+        const itemId = cell.dataset.itemId;
+
+        cell.classList.remove('editing');
+        cell.classList.add('saving');
+
+        try {
+            const response = await fetch(CONFIG.endpoints.update_field, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': CONFIG.csrfToken
+                },
+                body: JSON.stringify({
+                    item_id: parseInt(itemId),
+                    field: field,
+                    value: value
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                cell.dataset.value = value;
+                const valueEl = cell.querySelector('.cell-value');
+                if (valueEl) {
+                    valueEl.textContent = value;
+                    if (value > 0 && field === 'additional_quantity') {
+                        valueEl.classList.add('text-primary', 'fw-bold');
+                    } else {
+                        valueEl.classList.remove('text-primary', 'fw-bold');
+                    }
+                }
+                
+                if (data.auto_calculated && field === 'actual_quantity_used') {
+                    const remainingCell = cell.closest('tr').querySelector('[data-field="remaining_quantity"]');
+                    if (remainingCell) {
+                        remainingCell.dataset.value = data.remaining_quantity;
+                        const remainingValueEl = remainingCell.querySelector('.cell-value');
+                        if (remainingValueEl) remainingValueEl.textContent = data.remaining_quantity;
+                    }
+                }
+                
+                cell.classList.remove('saving');
+                cell.classList.add('saved');
+                showToast(`${getFieldLabel(field)}: ${value}`, 'success');
+                
+                setTimeout(() => {
+                    cell.classList.remove('saved');
+                    const row = cell.closest('tr');
+                    if (row) row.classList.remove('editing-row');
+                }, 1000);
+            } else {
+                throw new Error(data.error || 'Erreur serveur');
+            }
+        } catch (error) {
+            console.error('Save error:', error);
+            cell.classList.remove('saving');
+            cell.classList.add('error');
+            
+            const valueEl = cell.querySelector('.cell-value');
+            if (valueEl) valueEl.textContent = cell.dataset.value || cell.dataset.original || '0';
+            
+            showToast('Erreur: ' + error.message, 'error');
+            
+            setTimeout(() => {
+                cell.classList.remove('error');
+                const row = cell.closest('tr');
+                if (row) row.classList.remove('editing-row');
+            }, 2000);
+        } finally {
+            activeEdit = null;
+        }
+    }
+
+    function getFieldLabel(field) {
+        const labels = {
+            'actual_quantity_used': 'Qté utilisée',
+            'remaining_quantity': 'Reste',
+            'additional_quantity': 'Qté à ajouter'
+        };
+        return labels[field] || field;
+    }
+
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast-custom toast-${type}`;
+        
+        const icons = {
+            success: 'check-circle-fill',
+            error: 'x-circle-fill',
+            info: 'info-circle-fill'
+        };
+        
+        toast.innerHTML = `<i class="bi bi-${icons[type] || icons.info}"></i><span>${message}</span>`;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100%)';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    function bindGlobalEvents() {
+        document.addEventListener('click', (e) => {
+            if (activeEdit && !e.target.closest('.cell-editable')) {
+                finishEdit(activeEdit);
+            }
+        });
+
+        const selectAll = document.getElementById('selectAll');
+        if (selectAll) {
+            selectAll.addEventListener('change', (e) => {
+                document.querySelectorAll('.stock-check').forEach(cb => {
+                    cb.checked = e.target.checked;
+                });
+            });
+        }
+    }
+
+    return {
+        init,
+        showToast,
+        config: CONFIG
+    };
+})();
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', MaterialsManager.init);
+
+// ==================== FONCTIONS GLOBALES ====================
+
+async function openEditModal(itemId) {
+    try {
+        const response = await fetch(`${MaterialsManager.config.endpoints.get_material}${itemId}`);
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Impossible de charger les données');
+        }
+
+        const item = data.item;
+        const stockItem = data.stock_item;
+
+        document.getElementById('editItemId').value = itemId;
+        document.getElementById('editMaterialName').textContent = stockItem ? stockItem.libelle : 'N/A';
+        document.getElementById('editMaterialRef').textContent = stockItem ? stockItem.reference : '';
+        document.getElementById('editEstimatedQty').value = item.estimated_quantity;
+        document.getElementById('editUnit').value = item.unit_type;
+        document.getElementById('editActualQty').value = item.actual_quantity_used !== null ? item.actual_quantity_used : item.estimated_quantity;
+        document.getElementById('editRemainingQty').value = item.remaining_quantity || 0;
+        document.getElementById('editAdditionalQty').value = item.additional_quantity || 0;
+        document.getElementById('editReturnToStock').checked = item.return_to_stock;
+        document.getElementById('editJustification').value = item.justification_shortage || '';
+        document.getElementById('editNotes').value = item.notes || '';
+
+        const modal = new bootstrap.Modal(document.getElementById('editMaterialModal'));
+        modal.show();
+
+    } catch (error) {
+        MaterialsManager.showToast('Erreur: ' + error.message, 'error');
+    }
+}
+
+async function submitEditModal(event) {
+    event.preventDefault();
+    const form = event.target;
+    const itemId = document.getElementById('editItemId').value;
+
+    const data = {
+        item_id: parseInt(itemId),
+        actual_quantity_used: parseFloat(form.actual_quantity_used.value) || 0,
+        remaining_quantity: parseFloat(form.remaining_quantity.value) || 0,
+        additional_quantity: parseFloat(form.additional_quantity.value) || 0,
+        return_to_stock: form.return_to_stock.checked ? 1 : 0,
+        justification_shortage: form.justification_shortage.value || '',
+        notes: form.notes.value || ''
+    };
+
+    try {
+        const response = await fetch(MaterialsManager.config.endpoints.update_full, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': MaterialsManager.config.csrfToken
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            MaterialsManager.showToast('Modifications enregistrées !', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('editMaterialModal')).hide();
+            setTimeout(() => location.reload(), 500);
+        } else {
+            throw new Error(result.error || 'Erreur lors de la sauvegarde');
+        }
+    } catch (error) {
+        MaterialsManager.showToast('Erreur: ' + error.message, 'error');
+    }
+}
+
+function openAddModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addMaterialModal'));
+    modal.show();
+}
+
+function filterStock() {
+    const search = document.getElementById('searchStock').value.toLowerCase();
+    document.querySelectorAll('.stock-item').forEach(item => {
+        const name = item.dataset.name;
+        item.style.display = name.includes(search) ? '' : 'none';
+    });
+}
+
+async function submitAddMaterials() {
+    const selected = [];
+    document.querySelectorAll('.stock-check:checked').forEach(cb => {
+        const qtyInput = document.querySelector(`.stock-qty[data-id="${cb.value}"]`);
+        const qty = qtyInput ? parseFloat(qtyInput.value) : 1;
+        
+        if (qty > 0) {
+            selected.push({
+                stock_item_id: cb.value,
+                estimated_quantity: qty,
+                unit_type: 'piece'
+            });
+        }
+    });
+
+    if (selected.length === 0) {
+        MaterialsManager.showToast('Sélectionnez au moins un matériau', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(MaterialsManager.config.endpoints.add_batch, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': MaterialsManager.config.csrfToken
+            },
+            body: JSON.stringify({ items: selected })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            MaterialsManager.showToast('Matériaux ajoutés !', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            throw new Error(data.error);
+        }
+    } catch (error) {
+        MaterialsManager.showToast('Erreur: ' + error.message, 'error');
+    }
+}
+
+function openJustifyModal(itemId) {
+    document.getElementById('justifyItemId').value = itemId;
+    const modal = new bootstrap.Modal(document.getElementById('justifyModal'));
+    modal.show();
+}
+
+async function submitJustify(event) {
+    event.preventDefault();
+    const form = event.target;
+    const itemId = document.getElementById('justifyItemId').value;
+
+    try {
+        const response = await fetch(`${MaterialsManager.config.endpoints.justify}${itemId}/justify-shortage`, {
+            method: 'POST',
+            body: new FormData(form)
+        });
+
+        if (response.ok) {
+            MaterialsManager.showToast('Justificatif enregistré', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('justifyModal')).hide();
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            throw new Error('Erreur serveur');
+        }
+    } catch (error) {
+        MaterialsManager.showToast('Erreur: ' + error.message, 'error');
+    }
+}
+
+async function useStock() {
+    if (!confirm('Confirmer l\'utilisation du stock ?\n\nCette action déduira les quantités utilisées du stock disponible.')) return;
+
+    try {
+        const response = await fetch(MaterialsManager.config.endpoints.use_stock, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': MaterialsManager.config.csrfToken
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            MaterialsManager.showToast('Stock utilisé avec succès !', 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else if (data.insufficient_items) {
+            let msg = 'Stock insuffisant pour:\n';
+            data.insufficient_items.forEach(i => {
+                msg += `• ${i.name}: besoin ${i.needed}, dispo ${i.available}\n`;
+            });
+            alert(msg);
+        } else {
+            throw new Error(data.error);
+        }
+    } catch (error) {
+        MaterialsManager.showToast('Erreur: ' + error.message, 'error');
+    }
+}
+
+async function deleteMaterial(itemId) {
+    if (!confirm('Supprimer ce matériau ?')) return;
+
+    try {
+        const response = await fetch(`${MaterialsManager.config.endpoints.delete}${item_id}/delete`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': MaterialsManager.config.csrfToken
+            }
+        });
+
+        if (response.ok) {
+            MaterialsManager.showToast('Matériau supprimé', 'success');
+            const row = document.querySelector(`tr[data-item-id="${itemId}"]`);
+            if (row) row.remove();
+        } else {
+            throw new Error('Erreur');
+        }
+    } catch (error) {
+        MaterialsManager.showToast('Erreur: ' + error.message, 'error');
+    }
+}
+</script>
+{% endblock %}

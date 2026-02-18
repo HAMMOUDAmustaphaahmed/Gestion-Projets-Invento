@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">{{ title }}</h4>
+                    <a href="{{ url_for('projects.view', project_id=project.id) }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Retour au projet
+                    </a>
+                </div>
+                <div class="card-body">
+                    <!-- CORRECTION : Action conditionnelle du formulaire -->
+                    <form method="POST" action="{% if task %}{{ url_for('projects.edit_task', task_id=task.id) }}{% else %}{{ url_for('projects.add_task', project_id=project.id) }}{% endif %}">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Informations de base -->
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label required">{{ form.name.label }} *</label>
+                                {{ form.name(class="form-control" ~ (" is-invalid" if form.name.errors else "")) }}
+                                {% if form.name.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.name.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label">{{ form.description.label }}</label>
+                                {{ form.description(class="form-control", rows="3") }}
+                            </div>
+                        </div>
+
+                        <!-- Dates -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label required">{{ form.start_date.label }} *</label>
+                                {{ form.start_date(class="form-control" ~ (" is-invalid" if form.start_date.errors else "")) }}
+                                {% if form.start_date.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.start_date.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label required">{{ form.end_date.label }} *</label>
+                                {{ form.end_date(class="form-control" ~ (" is-invalid" if form.end_date.errors else "")) }}
+                                {% if form.end_date.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.end_date.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Type, Statut et Priorité -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">{{ form.task_type_id.label }}</label>
+                                {{ form.task_type_id(class="form-select") }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">{{ form.status.label }}</label>
+                                {{ form.status(class="form-select") }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">{{ form.priority.label }}</label>
+                                {{ form.priority(class="form-select") }}
+                            </div>
+                        </div>
+
+                        <!-- Personnel et Groupes -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.assigned_personnel.label }}</label>
+                                {{ form.assigned_personnel(class="form-select", multiple=true, size="5") }}
+                                <small class="form-text text-muted">Maintenez Ctrl (Cmd sur Mac) pour sélectionner plusieurs personnes</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.assigned_groups.label }}</label>
+                                {{ form.assigned_groups(class="form-select", multiple=true, size="5") }}
+                                <small class="form-text text-muted">Maintenez Ctrl (Cmd sur Mac) pour sélectionner plusieurs groupes</small>
+                            </div>
+                        </div>
+
+                        <!-- Stock -->
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    {{ form.use_stock(class="form-check-input") }}
+                                    <label class="form-check-label" for="{{ form.use_stock.id }}">
+                                        {{ form.use_stock.label.text }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Justification -->
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label">{{ form.justification.label }}</label>
+                                {{ form.justification(class="form-control", rows="2") }}
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label">{{ form.notes.label }}</label>
+                                {{ form.notes(class="form-control", rows="3") }}
+                            </div>
+                        </div>
+
+                        <!-- Boutons -->
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-lg"></i> 
+                                    {% if task %}Modifier la tâche{% else %}Créer la tâche{% endif %}
+                                </button>
+                                <a href="{{ url_for('projects.view', project_id=project.id) }}" class="btn btn-secondary">
+                                    <i class="bi bi-x-lg"></i> Annuler
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Initialize Select2 for better multi-select (optionnel)
+    if (typeof $.fn.select2 !== 'undefined') {
+        $('#assigned_personnel, #assigned_groups').select2({
+            theme: 'bootstrap-5',
+            placeholder: 'Sélectionner...',
+            allowClear: true
+        });
+    }
+});
+</script>
+{% endblock %}

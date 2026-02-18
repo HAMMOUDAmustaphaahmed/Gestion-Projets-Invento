@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-person-{{ 'plus' if not personnel else 'gear' }}"></i> 
+                {% if personnel %}Modifier le personnel{% else %}Ajouter du personnel{% endif %}
+            </h2>
+            <a href="{{ url_for('personnel.index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Retour
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Informations personnelles</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    {% if personnel %}
+                    <input type="hidden" name="personnel_id" value="{{ personnel.id }}">
+                    {% endif %}
+                    
+                    <!-- Informations de base -->
+                    <h6 class="border-bottom pb-2 mb-3">
+                        <i class="bi bi-info-circle"></i> Informations de base
+                    </h6>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.employee_id.label }}</label>
+                            {{ form.employee_id(class="form-control" + (" is-invalid" if form.employee_id.errors else "")) }}
+                            {% if form.employee_id.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.employee_id.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.first_name.label }}</label>
+                            {{ form.first_name(class="form-control" + (" is-invalid" if form.first_name.errors else "")) }}
+                            {% if form.first_name.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.first_name.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.last_name.label }}</label>
+                            {{ form.last_name(class="form-control" + (" is-invalid" if form.last_name.errors else "")) }}
+                            {% if form.last_name.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.last_name.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.email.label }}</label>
+                            {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else ""), type="email") }}
+                            {% if form.email.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.email.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.phone.label }}</label>
+                            {{ form.phone(class="form-control" + (" is-invalid" if form.phone.errors else "")) }}
+                            {% if form.phone.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.phone.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Informations professionnelles -->
+                    <h6 class="border-bottom pb-2 mb-3 mt-4">
+                        <i class="bi bi-briefcase"></i> Informations professionnelles
+                    </h6>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.department.label }}</label>
+                            {{ form.department(class="form-select" + (" is-invalid" if form.department.errors else "")) }}
+                            {% if form.department.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.department.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.position.label }}</label>
+                            {{ form.position(class="form-control" + (" is-invalid" if form.position.errors else "")) }}
+                            {% if form.position.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.position.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.hire_date.label }}</label>
+                        {{ form.hire_date(class="form-control" + (" is-invalid" if form.hire_date.errors else "")) }}
+                        {% if form.hire_date.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.hire_date.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Adresse -->
+                    <h6 class="border-bottom pb-2 mb-3 mt-4">
+                        <i class="bi bi-geo-alt"></i> Coordonnées
+                    </h6>
+
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.address.label }}</label>
+                        {{ form.address(class="form-control" + (" is-invalid" if form.address.errors else ""), rows=3) }}
+                        {% if form.address.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.address.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.city.label }}</label>
+                            {{ form.city(class="form-control" + (" is-invalid" if form.city.errors else "")) }}
+                            {% if form.city.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.city.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.country.label }}</label>
+                            {{ form.country(class="form-control" + (" is-invalid" if form.country.errors else ""), value="Tunisie") }}
+                            {% if form.country.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.country.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Contact d'urgence -->
+                    <h6 class="border-bottom pb-2 mb-3 mt-4">
+                        <i class="bi bi-telephone-forward"></i> Contact d'urgence
+                    </h6>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.emergency_contact.label }}</label>
+                            {{ form.emergency_contact(class="form-control" + (" is-invalid" if form.emergency_contact.errors else "")) }}
+                            {% if form.emergency_contact.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.emergency_contact.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.emergency_phone.label }}</label>
+                            {{ form.emergency_phone(class="form-control" + (" is-invalid" if form.emergency_phone.errors else "")) }}
+                            {% if form.emergency_phone.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.emergency_phone.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.notes.label }}</label>
+                        {{ form.notes(class="form-control" + (" is-invalid" if form.notes.errors else ""), rows=4) }}
+                        {% if form.notes.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.notes.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Statut -->
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            {{ form.is_active(class="form-check-input") }}
+                            <label class="form-check-label" for="is_active">
+                                {{ form.is_active.label.text }}
+                            </label>
+                        </div>
+                        <small class="form-text text-muted">
+                            Un membre inactif n'apparaîtra pas dans les sélections de personnel
+                        </small>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex gap-2">
+                        {{ form.submit(class="btn btn-primary") }}
+                        <a href="{{ url_for('personnel.index') }}" class="btn btn-secondary">Annuler</a>
+                        
+                        {% if personnel %}
+                        <a href="{{ url_for('personnel.view', personnel_id=personnel.id) }}" 
+                           class="btn btn-info ms-auto">
+                            <i class="bi bi-eye"></i> Voir le profil
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if personnel %}
+        <!-- Informations supplémentaires -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-info bg-opacity-10">
+                        <h6 class="mb-0"><i class="bi bi-clock-history"></i> Historique</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-2">
+                            <strong>Créé le:</strong><br>
+                            {{ personnel.created_at|format_date('%d/%m/%Y %H:%M') }}
+                        </p>
+                        {% if personnel.hire_date %}
+                        <p class="mb-0">
+                            <strong>Date d'embauche:</strong><br>
+                            {{ personnel.hire_date|format_date('%d/%m/%Y') }}
+                            <span class="text-muted">
+    ({{ (today - personnel.hire_date).days // 365 }} an(s) d'ancienneté)
+</span>
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-warning bg-opacity-10">
+                        <h6 class="mb-0"><i class="bi bi-diagram-3"></i> Groupes et tâches</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-2">
+                            <strong>Groupes:</strong>
+                            {% if personnel.groups|length > 0 %}
+                                <br>
+                                {% for group in personnel.groups %}
+                                <span class="badge bg-warning me-1">{{ group.name }}</span>
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted">Aucun groupe</span>
+                            {% endif %}
+                        </p>
+                        <p class="mb-0">
+                            <strong>Tâches assignées:</strong>
+                            <span class="badge bg-primary">{{ personnel.tasks|length }}</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Date picker configuration
+    if ($('#hire_date').length) {
+        $('#hire_date').attr('type', 'date');
+    }
+
+    // Validation de l'email
+    $('#email').on('blur', function() {
+        var email = $(this).val();
+        if (email && !isValidEmail(email)) {
+            $(this).addClass('is-invalid');
+            if (!$(this).next('.invalid-feedback').length) {
+                $(this).after('<div class="invalid-feedback">Format d\'email invalide</div>');
+            }
+        } else {
+            $(this).removeClass('is-invalid');
+            $(this).next('.invalid-feedback').remove();
+        }
+    });
+
+    // Validation du téléphone (format français/tunisien)
+    $('#phone, #emergency_phone').on('blur', function() {
+        var phone = $(this).val();
+        if (phone && phone.length > 0 && phone.length < 8) {
+            $(this).addClass('is-invalid');
+            if (!$(this).next('.invalid-feedback').length) {
+                $(this).after('<div class="invalid-feedback">Numéro de téléphone trop court</div>');
+            }
+        } else {
+            $(this).removeClass('is-invalid');
+            $(this).next('.invalid-feedback').remove();
+        }
+    });
+});
+</script>
+{% endblock %}
