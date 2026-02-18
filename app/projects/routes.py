@@ -2,13 +2,14 @@ from flask import render_template, current_app,redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from app.projects import bp
 from app.projects.forms import ProjectForm, TaskForm, TaskTypeForm, TaskStockItemForm, AdditionalCostForm, ProjectFileForm
-from app.models import Project, Task, TaskType, TaskStockItem, AdditionalCost, ProjectFile, StockItem, Personnel, Group
+from app.models import TaskExternalRef,Project, Task, TaskType, TaskStockItem, AdditionalCost, ProjectFile, StockItem, Personnel, Group
 from app import db
 from app.decorators import permission_required
 from app.utils import save_uploaded_file, delete_uploaded_file, check_stock_availability, sanitize_input
 from datetime import datetime, date
 import os
 import json
+from sqlalchemy import text
 
 @bp.route('/')
 @login_required
@@ -1058,7 +1059,7 @@ def task_materials(task_id):
     
     # Récupérer les items de stock de la tâche
     stock_items = task.stock_items.all()
-    
+    ext_refs = task.external_refs.order_by(TaskExternalRef.created_at.desc()).all()
     # Calculer les listes directement dans la route
     sufficient_items = []
     shortage_items = []
@@ -1084,7 +1085,9 @@ def task_materials(task_id):
                          return_items=return_items,
                          all_stock_items=all_stock_items,
                          categories=categories,
-                         suppliers=suppliers)
+                         suppliers=suppliers,
+                         ext_refs=ext_refs,
+                         text=text)
 
 @bp.route('/tasks/<int:task_id>/materials/add', methods=['POST'])
 @login_required
@@ -1616,4 +1619,107 @@ def update_material_field():
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Erreur update_material_field: {str(e)}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ============================================================================
+# À ajouter dans app/projects/routes.py
+#
+# Import à ajouter :  from app.models import ..., TaskExternalRef
+# ============================================================================
+
+def _ext_ref_to_dict(r):
+    return {
+        'id':            r.id,
+        'reference':     r.reference,
+        'item_type':     r.item_type,
+        'type_label':    r.get_type_label(),
+        'description':   r.description or '',
+        'quantity_used': float(r.quantity_used) if r.quantity_used is not None else None,
+        'notes':         r.notes or '',
+        'created_at':    r.created_at.strftime('%d/%m/%Y') if r.created_at else '',
+    }
+
+
+@bp.route('/tasks/<int:task_id>/external-refs/add', methods=['POST'])
+@login_required
+@permission_required('projects', 'update')
+def add_task_external_refs(task_id):
+    task = Task.query.get_or_404(task_id)
+    data = request.get_json(silent=True)
+
+    if not data or not data.get('refs'):
+        return jsonify({'success': False, 'error': 'Aucune référence fournie.'}), 400
+
+    added, errors = 0, []
+
+    for idx, item in enumerate(data['refs'], 1):
+        ref_val   = str(item.get('reference', '')).strip()
+        item_type = item.get('item_type', 'piece')
+
+        if not ref_val:
+            errors.append(f"Ligne {idx} : référence obligatoire."); continue
+        if item_type not in ('equipement', 'piece'):
+            errors.append(f"Ligne {idx} : type invalide."); continue
+
+        db.session.add(TaskExternalRef(
+            task_id     = task_id,
+            reference   = ref_val,
+            item_type   = item_type,
+            description = item.get('description') or None,
+            notes       = item.get('notes') or None,
+            created_by  = current_user.id,
+        ))
+        added += 1
+
+    if added == 0:
+        return jsonify({'success': False,
+                        'error': '; '.join(errors) or 'Aucun ajout.'}), 400
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+    all_refs = task.external_refs.order_by(TaskExternalRef.created_at.desc()).all()
+    return jsonify({'success': True,
+                    'message': f"{added} référence(s) ajoutée(s).",
+                    'refs': [_ext_ref_to_dict(r) for r in all_refs]})
+
+
+@bp.route('/tasks/<int:task_id>/external-refs/<int:ref_id>/update', methods=['POST'])
+@login_required
+@permission_required('projects', 'update')
+def update_task_external_ref(task_id, ref_id):
+    ref  = TaskExternalRef.query.filter_by(id=ref_id, task_id=task_id).first_or_404()
+    data = request.get_json(silent=True) or {}
+
+    if 'quantity_used' in data:
+        try:
+            ref.quantity_used = float(data['quantity_used']) if data['quantity_used'] is not None else None
+        except (ValueError, TypeError):
+            return jsonify({'success': False, 'error': 'quantity_used invalide'}), 400
+
+    if 'notes' in data:
+        ref.notes = data['notes'] or None
+
+    ref.updated_at = datetime.utcnow()
+    try:
+        db.session.commit()
+        return jsonify({'success': True, 'ref': _ext_ref_to_dict(ref)})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@bp.route('/tasks/<int:task_id>/external-refs/<int:ref_id>/delete', methods=['POST'])
+@login_required
+@permission_required('projects', 'update')
+def delete_task_external_ref(task_id, ref_id):
+    ref = TaskExternalRef.query.filter_by(id=ref_id, task_id=task_id).first_or_404()
+    try:
+        db.session.delete(ref)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Référence supprimée.'})
+    except Exception as e:
+        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500

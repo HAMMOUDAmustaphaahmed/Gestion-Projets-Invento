@@ -1,132 +1,123 @@
-#!/usr/bin/env python3
 """
-Script pour créer l'utilisateur Hammouda avec mot de passe Hammouda.123!
-Utilise le même hachage scrypt que l'application Flask
+admin.py - Script to create an admin user in the Invento database.
+Run this script from the root of your Flask project:
+    python admin.py
 """
 
-import sys
-import os
-from pathlib import Path
-
-# Ajouter le répertoire parent au chemin
-sys.path.insert(0, str(Path(__file__).parent))
-
+import pymysql
 from werkzeug.security import generate_password_hash
-from app import create_app, db
-from app.models import User, Role
+from datetime import datetime
 
-def create_hammouda_user():
-    """Crée l'utilisateur Hammouda avec mot de passe Hammouda.123!"""
-    
-    app = create_app('development')
-    
-    with app.app_context():
-        print("=" * 60)
-        print("🔐 CRÉATION UTILISATEUR HAMMOUDA")
-        print("=" * 60)
-        
-        # Vérifier si l'utilisateur existe déjà
-        existing_user = User.query.filter(
-            (User.username == 'Hammouda') | 
-            (User.email == 'hammouda@gmao.com')
-        ).first()
-        
-        if existing_user:
-            print(f"⚠️  Utilisateur existe déjà: {existing_user.username}")
-            print(f"   Email: {existing_user.email}")
-            print(f"   Rôle: {existing_user.role.name if existing_user.role else 'Aucun'}")
-            
-            # Demander confirmation pour réinitialiser
-            response = input("\nVoulez-vous réinitialiser le mot de passe? (o/n): ")
-            if response.lower() != 'o':
-                print("❌ Opération annulée.")
+# ── Database connection (from config.py) ──────────────────────────────────────
+DB_CONFIG = {
+    'host':     'mysql-tchs-ahmedmustaphahammouda.k.aivencloud.com',
+    'port':     19932,
+    'user':     'avnadmin',
+    'password': 'AVNS_gk-MK5-1fa-HjpSNe28',
+    'database': 'defaultdb',
+    'charset':  'utf8mb4',
+    'cursorclass': pymysql.cursors.DictCursor,
+    'connect_timeout': 20,
+}
+
+# ── Admin user details ─────────────────────────────────────────────────────────
+ADMIN = {
+    'username':   'Hammouda',
+    'email':      'hammouda@invento.com',   # change if needed
+    'password':   'Hammouda.123!',
+    'first_name': 'Hammouda',
+    'last_name':  'Admin',
+    'is_active':  True,
+}
+
+
+def get_or_create_admin_role(cursor):
+    """Return the id of the 'admin' role, creating it if it doesn't exist."""
+    cursor.execute("SELECT id FROM role WHERE name = 'admin'")
+    row = cursor.fetchone()
+    if row:
+        print(f"  [✓] Role 'admin' found (id={row['id']})")
+        return row['id']
+
+    # Full-access permissions for every known module
+    import json
+    modules = [
+        'personnel', 'groups', 'stock', 'projects', 'tasks',
+        'interventions', 'equipment', 'suppliers', 'users', 'reports',
+    ]
+    permissions = {m: {'read': True, 'create': True, 'update': True, 'delete': True}
+                   for m in modules}
+
+    cursor.execute(
+        "INSERT INTO role (name, description, permissions) VALUES (%s, %s, %s)",
+        ('admin', 'Administrateur système', json.dumps(permissions))
+    )
+    role_id = cursor.lastrowid
+    print(f"  [+] Role 'admin' created (id={role_id})")
+    return role_id
+
+
+def create_admin_user():
+    print("\n=== Invento – Create Admin User ===\n")
+
+    conn = pymysql.connect(**DB_CONFIG)
+    try:
+        with conn.cursor() as cursor:
+
+            # 1. Ensure the admin role exists
+            role_id = get_or_create_admin_role(cursor)
+
+            # 2. Check if the username already exists
+            cursor.execute("SELECT id FROM user WHERE username = %s", (ADMIN['username'],))
+            if cursor.fetchone():
+                print(f"  [!] User '{ADMIN['username']}' already exists. Aborting.")
                 return
-            
-            # Réinitialiser le mot de passe
-            new_password = 'Hammouda.123!'
-            existing_user.password = new_password
-            db.session.commit()
-            print(f"✅ Mot de passe réinitialisé pour {existing_user.username}")
-            print(f"   Nouveau mot de passe: {new_password}")
-            return
-        
-        # Récupérer le rôle admin (ou créer si nécessaire)
-        admin_role = Role.query.filter_by(name='admin').first()
-        
-        if not admin_role:
-            print("⚠️  Rôle 'admin' non trouvé. Création...")
-            admin_role = Role(
-                name='admin',
-                description='Administrateur système avec tous les droits'
-            )
-            # Permissions par défaut pour admin
-            import json
-            admin_role.set_permissions({
-                "admin": {"all": True},
-                "stock": {"read": True, "create": True, "update": True, "delete": True, "export": True},
-                "projects": {"read": True, "create": True, "update": True, "delete": True, "export": True},
-                "tasks": {"read": True, "create": True, "update": True, "delete": True, "export": True},
-                "personnel": {"read": True, "create": True, "update": True, "delete": True, "export": True},
-                "calendar": {"read": True, "create": True, "update": True, "export": True},
-                "dashboard": {"read": True, "create": True, "update": True, "export": True},
-                "settings": {"all": True}
-            })
-            db.session.add(admin_role)
-            db.session.commit()
-            print("✅ Rôle 'admin' créé")
-        
-        # Créer l'utilisateur Hammouda
-        username = 'Hammouda'
-        email = 'hammouda@gmao.com'
-        password = 'Hammouda.123!'
-        
-        # Générer le hash du mot de passe (méthode scrypt par défaut)
-        password_hash = generate_password_hash(password)
-        
-        print(f"\n📝 Informations de l'utilisateur:")
-        print(f"   Username: {username}")
-        print(f"   Email: {email}")
-        print(f"   Mot de passe: {password}")
-        print(f"\n🔑 Hash généré:")
-        print(f"   {password_hash}")
-        
-        # Créer l'objet User
-        new_user = User(
-            username=username,
-            email=email,
-            first_name='Hammouda',
-            last_name='Utilisateur',
-            role=admin_role,
-            is_active=True
-        )
-        
-        # Définir le mot de passe (utilise le setter qui hash automatiquement)
-        new_user.password = password
-        
-        # Sauvegarder en base
-        db.session.add(new_user)
-        db.session.commit()
-        
-        print("\n" + "=" * 60)
-        print("✅ UTILISATEUR CRÉÉ AVEC SUCCÈS!")
-        print("=" * 60)
-        print(f"\n📋 Récapitulatif:")
-        print(f"   ID: {new_user.id}")
-        print(f"   Username: {new_user.username}")
-        print(f"   Email: {new_user.email}")
-        print(f"   Rôle: {new_user.role.name}")
-        print(f"   Mot de passe (clair): {password}")
-        print(f"\n🔐 Hash stocké en base:")
-        print(f"   {new_user.password_hash}")
-        print("\n" + "=" * 60)
-        print("⚠️  CONSERVEZ CES INFORMATIONS EN LIEU SÛR!")
-        print("=" * 60)
+
+            # 3. Check if the email already exists
+            cursor.execute("SELECT id FROM user WHERE email = %s", (ADMIN['email'],))
+            if cursor.fetchone():
+                print(f"  [!] Email '{ADMIN['email']}' already exists. Aborting.")
+                return
+
+            # 4. Hash the password (same method Flask-Login / Werkzeug uses)
+            password_hash = generate_password_hash(ADMIN['password'])
+            now = datetime.utcnow()
+
+            # 5. Insert the user
+            sql = """
+                INSERT INTO user
+                    (username, email, password_hash, first_name, last_name,
+                     is_active, role_id, created_at)
+                VALUES
+                    (%s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(sql, (
+                ADMIN['username'],
+                ADMIN['email'],
+                password_hash,
+                ADMIN['first_name'],
+                ADMIN['last_name'],
+                ADMIN['is_active'],
+                role_id,
+                now,
+            ))
+
+            user_id = cursor.lastrowid
+            conn.commit()
+
+            print(f"  [✓] Admin user created successfully!")
+            print(f"      id       : {user_id}")
+            print(f"      username : {ADMIN['username']}")
+            print(f"      email    : {ADMIN['email']}")
+            print(f"      password : {ADMIN['password']}")
+            print(f"      role     : admin (id={role_id})\n")
+
+    except pymysql.MySQLError as e:
+        conn.rollback()
+        print(f"  [✗] Database error: {e}")
+    finally:
+        conn.close()
+
 
 if __name__ == '__main__':
-    try:
-        create_hammouda_user()
-    except Exception as e:
-        print(f"\n❌ ERREUR: {e}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
+    create_admin_user()

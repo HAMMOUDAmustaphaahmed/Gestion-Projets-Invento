@@ -1070,3 +1070,56 @@ class EquipmentMaintenance(db.Model):
     
     def __repr__(self):
         return f'<EquipmentMaintenance {self.maintenance_type} - {self.maintenance_date}>'
+
+
+
+
+class TaskExternalRef(db.Model):
+    """
+    Équipements / pièces utilisés dans une tâche qui n'existent PAS dans
+    la table stock_item.  Seule la référence est obligatoire.
+    """
+    __tablename__ = 'task_external_ref'
+
+    id                = db.Column(db.Integer, primary_key=True)
+    task_id           = db.Column(db.Integer,
+                                  db.ForeignKey('task.id', ondelete='CASCADE'),
+                                  nullable=False)
+
+    # Identification
+    reference         = db.Column(db.String(128), nullable=False)
+    item_type         = db.Column(
+                            db.Enum('equipement', 'piece'),
+                            nullable=False,
+                            default='piece'
+                        )
+    description       = db.Column(db.String(255))   # libellé court, optionnel
+
+    # Quantités
+    quantity_used     = db.Column(db.Float)                # réellement utilisée
+
+    # Métadonnées
+    notes             = db.Column(db.Text)
+    created_by        = db.Column(db.Integer,
+                                  db.ForeignKey('user.id', ondelete='SET NULL'))
+    created_at        = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at        = db.Column(db.DateTime, default=datetime.utcnow,
+                                  onupdate=datetime.utcnow)
+
+    # Relations
+    task    = db.relationship('Task', backref=db.backref(
+                  'external_refs', lazy='dynamic', cascade='all, delete-orphan'
+              ))
+    creator = db.relationship('User', backref='task_external_refs_created')
+
+    TYPE_LABELS = {
+        'equipement': 'Équipement',
+        'piece':      'Pièce détachée',
+    }
+
+    def get_type_label(self):
+        return self.TYPE_LABELS.get(self.item_type, self.item_type)
+
+    def __repr__(self):
+        return f'<TaskExternalRef {self.reference} ({self.item_type}) task={self.task_id}>'
+
